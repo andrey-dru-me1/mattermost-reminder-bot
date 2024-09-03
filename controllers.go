@@ -108,7 +108,7 @@ func getReminders(c *gin.Context) {
 
 	for rows.Next() {
 		var id int
-		var name, rule, createdAtString, modifiedAtString string
+		var name, rule, channel, createdAtString, modifiedAtString string
 
 		if err := rows.Scan(
 			&id,
@@ -116,6 +116,7 @@ func getReminders(c *gin.Context) {
 			&rule,
 			&createdAtString,
 			&modifiedAtString,
+			&channel,
 		); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -136,6 +137,7 @@ func getReminders(c *gin.Context) {
 			ID:         id,
 			Name:       name,
 			Rule:       rule,
+			Channel:    channel,
 			CreatedAt:  createdAt,
 			ModifiedAt: modifiedAt,
 		})
