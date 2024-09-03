@@ -124,10 +124,12 @@ func getReminders(c *gin.Context) {
 		createdAt, err := time.Parse("2006-01-02 15:04:05", createdAtString)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
 		modifiedAt, err := time.Parse("2006-01-02 15:04:05", modifiedAtString)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
 
 		reminders = append(reminders, reminder{
@@ -140,4 +142,32 @@ func getReminders(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, reminders)
+}
+
+func deleteReminder(c *gin.Context) {
+	db, exists := c.MustGet("db").(*sql.DB)
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database connection not found"})
+		return
+	}
+
+	userID := c.Param("id")
+
+	res, err := db.Exec("DELETE FROM reminders WHERE id = ?", userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if rowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Reminder not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }

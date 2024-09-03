@@ -56,6 +56,7 @@ func main() {
 	router.GET("/reminders", getReminders)
 	router.PUT("/reminders/:id", updateReminder)
 	router.POST("/reminders", createReminder)
+	router.DELETE("/reminders/:id", deleteReminder)
 
 	// router.Run("0.0.0.0:8080")
 	router.Run("localhost:8080")
