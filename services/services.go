@@ -1,24 +1,21 @@
-package main
+package services
 
 import (
 	"database/sql"
 	"time"
+
+	"example.com/colleague/graph/controllers/dtos"
+	"example.com/colleague/graph/models"
 )
 
-type reminderDTO struct {
-	Name    string `json:"name"`
-	Rule    string `json:"rule"`
-	Channel string `json:"channel"`
-}
-
-func getRemindersService(db *sql.DB) ([]reminder, error) {
+func GetReminders(db *sql.DB) ([]models.Reminder, error) {
 	rows, err := db.Query("SELECT * FROM reminders")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var reminders []reminder
+	var reminders []models.Reminder
 
 	for rows.Next() {
 		var id int
@@ -44,7 +41,7 @@ func getRemindersService(db *sql.DB) ([]reminder, error) {
 			return nil, err
 		}
 
-		reminders = append(reminders, reminder{
+		reminders = append(reminders, models.Reminder{
 			ID:         id,
 			Name:       name,
 			Rule:       rule,
@@ -57,7 +54,7 @@ func getRemindersService(db *sql.DB) ([]reminder, error) {
 	return reminders, nil
 }
 
-func updateReminderService(db *sql.DB, reminderID string, req reminderDTO) error {
+func UpdateReminder(db *sql.DB, reminderID string, req dtos.ReminderDTO) error {
 	res, err := db.Exec(
 		"UPDATE reminders SET name = ?, rule = ?, channel = ? WHERE id = ?",
 		req.Name,
@@ -81,7 +78,7 @@ func updateReminderService(db *sql.DB, reminderID string, req reminderDTO) error
 	return nil
 }
 
-func createReminderService(db *sql.DB, req reminderDTO) (int64, error) {
+func CreateReminder(db *sql.DB, req dtos.ReminderDTO) (int64, error) {
 	res, err := db.Exec(
 		"INSERT INTO reminders (name, rule, channel) VALUES (?, ?, ?)",
 		req.Name,

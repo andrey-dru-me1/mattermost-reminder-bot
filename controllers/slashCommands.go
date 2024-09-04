@@ -1,10 +1,12 @@
-package main
+package controllers
 
 import (
 	"fmt"
 	"net/http"
 	"strings"
 
+	"example.com/colleague/graph/controllers/dtos"
+	"example.com/colleague/graph/services"
 	"github.com/gin-gonic/gin"
 )
 
@@ -29,8 +31,8 @@ func mattermostReminderCreate(c *gin.Context, req mattermostRequest, tokens []st
 		return
 	}
 
-	rem := reminderDTO{Name: tokens[1], Rule: tokens[2], Channel: req.ChannelName}
-	_, err = createReminderService(db, rem)
+	rem := dtos.ReminderDTO{Name: tokens[1], Rule: tokens[2], Channel: req.ChannelName}
+	_, err = services.CreateReminder(db, rem)
 	if err != nil {
 		c.JSON(
 			http.StatusOK,
@@ -55,7 +57,7 @@ func mattermostReminderList(c *gin.Context) {
 		return
 	}
 
-	reminders, err := getRemindersService(db)
+	reminders, err := services.GetReminders(db)
 	if err != nil {
 		c.JSON(
 			http.StatusOK,
@@ -78,7 +80,7 @@ func mattermostReminderList(c *gin.Context) {
 	)
 }
 
-func mattermostReminder(c *gin.Context) {
+func MattermostReminder(c *gin.Context) {
 	var req mattermostRequest
 
 	if err := c.Bind(&req); err != nil {

@@ -5,35 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
+	"example.com/colleague/graph/controllers"
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 )
-
-// type dayOfWeek uint8
-// type hour uint8
-// type min uint8
-
-// const (
-// 	monday = iota
-// 	tuesday
-// 	wednesday
-// 	thursday
-// 	friday
-// 	saturday
-// 	sunday
-// )
-
-type reminder struct {
-	ID         int       `json:"id"`
-	Name       string    `json:"name"`
-	Rule       string    `json:"rule"`
-	Channel    string    `json:"channel"`
-	CreatedAt  time.Time `json:"created_at"`
-	ModifiedAt time.Time `json:"modified_at"`
-}
 
 func main() {
 	err := godotenv.Load()
@@ -54,12 +31,12 @@ func main() {
 		ctx.Next()
 	})
 
-	router.GET("/reminders", getRemindersController)
-	router.PUT("/reminders/:id", updateReminderController)
-	router.POST("/reminders", createReminderController)
-	router.DELETE("/reminders/:id", deleteReminder)
+	router.GET("/reminders", controllers.GetReminders)
+	router.PUT("/reminders/:id", controllers.UpdateReminder)
+	router.POST("/reminders", controllers.CreateReminder)
+	router.DELETE("/reminders/:id", controllers.DeleteReminder)
 
-	router.POST("/mattermost/reminders", mattermostReminder)
+	router.POST("/mattermost/reminders", controllers.MattermostReminder)
 
 	router.Run(":8080")
 }
