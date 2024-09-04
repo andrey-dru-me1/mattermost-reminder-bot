@@ -55,12 +55,14 @@ func main() {
 	})
 
 	router.GET("/reminders", getReminders)
-	router.PUT("/reminders/:id", updateReminder)
-	router.POST("/reminders", createReminder)
+	router.PUT("/reminders/:id", updateReminderController)
+	router.POST("/reminders", createReminderController)
 	router.DELETE("/reminders/:id", deleteReminder)
 
-	// router.Run("0.0.0.0:8080")
-	router.Run("localhost:8080")
+	router.POST("/mattermost/reminders", mattermostReminderCreate)
+
+	router.Run(":8080")
+	// router.Run("localhost:8080")
 }
 
 func setupDatabase() (*sql.DB, error) {

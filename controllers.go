@@ -1,101 +1,68 @@
 package main
 
 import (
-	"database/sql"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-func updateReminder(c *gin.Context) {
-	db, exists := c.MustGet("db").(*sql.DB)
-	if !exists {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database connection not found"})
+func updateReminderController(c *gin.Context) {
+	db, err := extractDB(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	userID := c.Param("id")
+	reminderID := c.Param("id")
 
-	var request struct {
-		Name string `json:"name"`
-		Rule string `json:"rule"`
-	}
+	var request reminderDTO
 
 	if err := c.BindJSON(&request); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	res, err := db.Exec(
-		"UPDATE reminders SET name = ?, rule = ? WHERE id = ?",
-		request.Name,
-		request.Rule,
-		userID,
-	)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	}
-
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	if rowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Reminder not found"})
+	if err := updateReminderService(db, reminderID, request); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
 }
 
-func createReminder(c *gin.Context) {
-	db, exists := c.MustGet("db").(*sql.DB)
-	if !exists {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database connection not found"})
+func createReminderController(c *gin.Context) {
+	db, err := extractDB(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	var request struct {
-		Name string `json:"name"`
-		Rule string `json:"rule"`
-	}
+	var request reminderDTO
 
 	if err := c.BindJSON(&request); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	res, err := db.Exec(
-		"INSERT INTO reminders (name, rule) VALUES (?, ?)",
-		request.Name,
-		request.Rule,
-	)
+	id, err := createReminderService(db, request)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	}
-
-	lastInsertID, err := res.LastInsertId()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Reminder created successfully",
-		"id":      lastInsertID,
+		"id":      id,
 	})
 }
 
 func getReminders(c *gin.Context) {
-	db, exists := c.MustGet("db").(*sql.DB)
-	if !exists {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get database connection"})
+	db, err := extractDB(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	defer db.Close()
 
 	rows, err := db.Query("SELECT * FROM reminders")
 	if err != nil {
@@ -147,9 +114,9 @@ func getReminders(c *gin.Context) {
 }
 
 func deleteReminder(c *gin.Context) {
-	db, exists := c.MustGet("db").(*sql.DB)
-	if !exists {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database connection not found"})
+	db, err := extractDB(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -171,5 +138,5 @@ func deleteReminder(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Reminder deleted successfully"})
 }
