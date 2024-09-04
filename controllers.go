@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -57,57 +56,17 @@ func createReminderController(c *gin.Context) {
 	})
 }
 
-func getReminders(c *gin.Context) {
+func getRemindersController(c *gin.Context) {
 	db, err := extractDB(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	rows, err := db.Query("SELECT * FROM reminders")
+	reminders, err := getRemindersService(db)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
-	}
-	defer rows.Close()
-
-	var reminders []reminder
-
-	for rows.Next() {
-		var id int
-		var name, rule, channel, createdAtString, modifiedAtString string
-
-		if err := rows.Scan(
-			&id,
-			&name,
-			&rule,
-			&createdAtString,
-			&modifiedAtString,
-			&channel,
-		); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		createdAt, err := time.Parse("2006-01-02 15:04:05", createdAtString)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		modifiedAt, err := time.Parse("2006-01-02 15:04:05", modifiedAtString)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		reminders = append(reminders, reminder{
-			ID:         id,
-			Name:       name,
-			Rule:       rule,
-			Channel:    channel,
-			CreatedAt:  createdAt,
-			ModifiedAt: modifiedAt,
-		})
 	}
 
 	c.IndentedJSON(http.StatusOK, reminders)

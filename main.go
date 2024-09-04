@@ -54,12 +54,12 @@ func main() {
 		ctx.Next()
 	})
 
-	router.GET("/reminders", getReminders)
+	router.GET("/reminders", getRemindersController)
 	router.PUT("/reminders/:id", updateReminderController)
 	router.POST("/reminders", createReminderController)
 	router.DELETE("/reminders/:id", deleteReminder)
 
-	router.POST("/mattermost/reminders", mattermostReminderCreate)
+	router.POST("/mattermost/reminders", mattermostReminder)
 
 	router.Run(":8080")
 	// router.Run("localhost:8080")
