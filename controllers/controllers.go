@@ -25,7 +25,7 @@ func UpdateReminder(c *gin.Context) {
 	}
 
 	if err := services.UpdateReminder(db, reminderID, request); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -48,7 +48,7 @@ func CreateReminder(c *gin.Context) {
 
 	id, err := services.CreateReminder(db, request)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

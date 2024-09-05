@@ -18,7 +18,7 @@ type mattermostRequest struct {
 
 func mattermostReminderCreate(c *gin.Context, req mattermostRequest, tokens []string) {
 	if len(tokens) < 3 {
-		c.JSON(http.StatusOK, gin.H{"text": "Usage: '/reminder create [NAME] [RULE]'"})
+		c.JSON(http.StatusOK, gin.H{"text": `Usage: '/reminder create [NAME] "[RULE]"'`})
 		return
 	}
 
@@ -31,7 +31,11 @@ func mattermostReminderCreate(c *gin.Context, req mattermostRequest, tokens []st
 		return
 	}
 
-	rem := dtos.ReminderDTO{Name: tokens[1], Rule: tokens[2], Channel: req.ChannelName}
+	rem := dtos.ReminderDTO{
+		Name:    tokens[1],
+		Rule:    strings.Join(tokens[1:], " "),
+		Channel: req.ChannelName,
+	}
 	_, err = services.CreateReminder(db, rem)
 	if err != nil {
 		c.JSON(
@@ -95,7 +99,7 @@ func MattermostReminder(c *gin.Context) {
 			http.StatusOK,
 			gin.H{"text": "Usage: '/reminder [create|list]'"},
 		)
-	} else if strings.EqualFold(tokens[0], "create") {
+	} else if strings.EqualFold(tokens[0], "add") {
 		mattermostReminderCreate(c, req, tokens)
 	} else if strings.EqualFold(tokens[0], "list") {
 		mattermostReminderList(c)
