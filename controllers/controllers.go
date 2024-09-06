@@ -3,8 +3,8 @@ package controllers
 import (
 	"net/http"
 
-	"example.com/colleague/graph/controllers/dtos"
-	"example.com/colleague/graph/services"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/controllers/dtos"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/services"
 	"github.com/gin-gonic/gin"
 )
 

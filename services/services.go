@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"time"
 
-	"example.com/colleague/graph/controllers/dtos"
-	"example.com/colleague/graph/models"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/controllers/dtos"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/models"
 )
 
 func GetReminders(db *sql.DB) ([]models.Reminder, error) {

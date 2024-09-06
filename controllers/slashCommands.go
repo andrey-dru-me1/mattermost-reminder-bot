@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"example.com/colleague/graph/controllers/dtos"
-	"example.com/colleague/graph/services"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/controllers/dtos"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/services"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,7 +33,7 @@ func mattermostReminderCreate(c *gin.Context, req mattermostRequest, tokens []st
 
 	rem := dtos.ReminderDTO{
 		Name:    tokens[1],
-		Rule:    strings.Join(tokens[1:], " "),
+		Rule:    strings.Join(tokens[2:], " "),
 		Channel: req.ChannelName,
 	}
 	_, err = services.CreateReminder(db, rem)

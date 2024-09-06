@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"example.com/colleague/graph/controllers"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/controllers"
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
