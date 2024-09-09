@@ -24,7 +24,6 @@ func SetupApplication() (*Application, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
 
 	trigRems, newRems, err := setupRemindGenerator(db)
 	if err != nil {
@@ -61,7 +60,7 @@ func setupDatabase() (*sql.DB, error) {
 
 func setupRemindGenerator(db *sql.DB) (<-chan models.Reminder, chan<- models.Reminder, error) {
 	triggeredReminders := make(chan models.Reminder, 255)
-	var newReminders chan models.Reminder
+	newReminders := make(chan models.Reminder)
 
 	reminders, err := repositories.GetReminders(db)
 	if err != nil {
@@ -69,17 +68,20 @@ func setupRemindGenerator(db *sql.DB) (<-chan models.Reminder, chan<- models.Rem
 	}
 	go func() {
 		for _, reminder := range reminders {
+			log.Printf("Push reminder %d (%s) to a channel\n", reminder.ID, reminder.Name)
 			newReminders <- reminder
 		}
 	}()
 
-	generateReminds(triggeredReminders, newReminders)
+	go generateReminds(triggeredReminders, newReminders)
 
 	return triggeredReminders, newReminders, nil
 }
 
 func generateReminds(triggeredReminders chan<- models.Reminder, newReminders <-chan models.Reminder) {
+	log.Printf("Begin generating reminds")
 	for reminder, more := <-newReminders; more; reminder, more = <-newReminders {
+		log.Printf("Got a new reminder %d: %s\n", reminder.ID, reminder.Name)
 		go func() {
 			expr, err := cronexpr.Parse(reminder.Rule)
 			if err != nil {
@@ -101,4 +103,5 @@ func generateReminds(triggeredReminders chan<- models.Reminder, newReminders <-c
 			}
 		}()
 	}
+	log.Printf("Finish generating reminds")
 }

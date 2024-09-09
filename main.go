@@ -19,6 +19,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer app.Db.Close()
 
 	router := gin.Default()
 

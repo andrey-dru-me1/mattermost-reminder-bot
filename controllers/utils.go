@@ -8,7 +8,7 @@ import (
 )
 
 func extractApp(c *gin.Context) (*app.Application, error) {
-	app, exists := c.MustGet("db").(*app.Application)
+	app, exists := c.MustGet("app").(*app.Application)
 	if !exists {
 		return nil, fmt.Errorf("application not provided")
 	}
