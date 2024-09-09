@@ -14,10 +14,12 @@ import (
 )
 
 const usage = `Usage: /reminder COMMAND OPTIONS
-	commands:
-	- add, create NAME CRON-RULE - creates new reminder
-	- list, ls - lists all reminders
-	- delete, del, remove, rm ID - deletes a reminder with ID identifier
+  commands:
+  - add, create NAME CRON-RULE - creates new reminder
+  - list, ls - lists all reminders
+  - delete, del, remove, rm ID - deletes a reminder with ID identifier
+
+CRON-RULE: "Seconds Minutes Hours DayOfMonth Month DayOfWeek Year"
 `
 
 type mattermostRequest struct {
@@ -116,7 +118,7 @@ func MattermostReminder(c *gin.Context) {
 
 	tokens := tokenize(req.Text)
 
-	if strings.EqualFold(req.Command, "/reminder") {
+	if len(tokens) > 0 && strings.EqualFold(req.Command, "/reminder") {
 		switch tokens[0] {
 		case "add", "create":
 			mattermostReminderCreate(c, app, req, tokens)
