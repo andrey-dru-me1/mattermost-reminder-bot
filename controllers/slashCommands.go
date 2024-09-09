@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/controllers/dtos"
@@ -18,7 +19,7 @@ type mattermostRequest struct {
 
 func mattermostReminderCreate(c *gin.Context, req mattermostRequest, tokens []string) {
 	if len(tokens) < 3 {
-		c.JSON(http.StatusOK, gin.H{"text": `Usage: '/reminder create [NAME] "[RULE]"'`})
+		c.JSON(http.StatusOK, gin.H{"text": `Usage: '/reminder create [NAME] "[CRON-RULE]"'`})
 		return
 	}
 
@@ -33,7 +34,7 @@ func mattermostReminderCreate(c *gin.Context, req mattermostRequest, tokens []st
 
 	rem := dtos.ReminderDTO{
 		Name:    tokens[1],
-		Rule:    strings.Join(tokens[2:], " "),
+		Rule:    tokens[2],
 		Channel: req.ChannelName,
 	}
 	_, err = services.CreateReminder(db, rem)
@@ -71,10 +72,16 @@ func mattermostReminderList(c *gin.Context) {
 	}
 
 	var sb strings.Builder
-	sb.WriteString("|Name|Channel|Rule|\n|-|-|-|\n")
+	sb.WriteString("|Id|Name|Channel|Rule|\n|-|-|-|-|\n")
 	for _, reminder := range reminders {
 		sb.WriteString(
-			fmt.Sprintf("|%s|%s|%s|\n", reminder.Name, reminder.Channel, reminder.Rule),
+			fmt.Sprintf(
+				"|%d|%s|%s|%s|\n",
+				reminder.ID,
+				reminder.Name,
+				reminder.Channel,
+				reminder.Rule,
+			),
 		)
 	}
 
@@ -82,6 +89,10 @@ func mattermostReminderList(c *gin.Context) {
 		http.StatusOK,
 		gin.H{"text": sb.String()},
 	)
+}
+
+func mattemostReminderDelete(c *gin.Context, req mattermostRequest, tokens []string) {
+
 }
 
 func MattermostReminder(c *gin.Context) {
@@ -92,16 +103,35 @@ func MattermostReminder(c *gin.Context) {
 		return
 	}
 
-	tokens := strings.Split(req.Text, " ")
+	tokens := tokenize(req.Text)
 
-	if len(tokens) < 1 || !strings.EqualFold(req.Command, "/reminder") {
-		c.JSON(
-			http.StatusOK,
-			gin.H{"text": "Usage: '/reminder [create|list]'"},
-		)
-	} else if strings.EqualFold(tokens[0], "add") {
-		mattermostReminderCreate(c, req, tokens)
-	} else if strings.EqualFold(tokens[0], "list") {
-		mattermostReminderList(c)
+	if strings.EqualFold(req.Command, "/reminder") {
+		switch tokens[0] {
+		case "add":
+			mattermostReminderCreate(c, req, tokens)
+			return
+		case "list":
+			mattermostReminderList(c)
+			return
+		}
 	}
+	c.JSON(
+		http.StatusOK,
+		gin.H{"text": "Usage: '/reminder [add|list]'"},
+	)
+}
+
+func tokenize(str string) []string {
+	re := regexp.MustCompile(`'[^']*'|"[^"]*"|\S+`)
+	tokens := re.FindAllString(str, -1)
+
+	for i, token := range tokens {
+		tokLen := len(token)
+		if tokLen > 1 &&
+			((token[0] == '"' && token[tokLen-1] == '"') ||
+				(token[0] == '\'' && token[tokLen-1] == '\'')) {
+			tokens[i] = token[1 : tokLen-1]
+		}
+	}
+	return tokens
 }

@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/controllers"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/models"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/services"
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
+	"github.com/gorhill/cronexpr"
 	"github.com/joho/godotenv"
 )
 
@@ -24,17 +28,26 @@ func main() {
 	}
 	defer db.Close()
 
+	ch := make(chan models.Reminder, 255)
+	err = generateReminds(db, ch)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	router := gin.Default()
 
 	router.Use(func(ctx *gin.Context) {
 		ctx.Set("db", db)
+		ctx.Set("reminderChan", ch)
 		ctx.Next()
 	})
 
 	router.GET("/reminders", controllers.GetReminders)
-	router.PUT("/reminders/:id", controllers.UpdateReminder)
+	router.PUT("/reminder/:id", controllers.UpdateReminder)
 	router.POST("/reminders", controllers.CreateReminder)
-	router.DELETE("/reminders/:id", controllers.DeleteReminder)
+	router.DELETE("/reminder/:id", controllers.DeleteReminder)
+
+	router.GET("/reminders/triggered", controllers.GetTriggeredReminders)
 
 	router.POST("/mattermost/reminders", controllers.MattermostReminder)
 
@@ -60,4 +73,36 @@ func setupDatabase() (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func generateReminds(db *sql.DB, ch chan models.Reminder) error {
+	reminders, err := services.GetReminders(db)
+	if err != nil {
+		return err
+	}
+
+	for _, reminder := range reminders {
+		go func() {
+			expr, err := cronexpr.Parse(reminder.Rule)
+			if err != nil {
+				log.Printf(
+					"Error while parsing cron expression '%s': %s\n", reminder.Rule, err,
+				)
+				return
+			}
+			log.Printf("Reminder detected: %v\n", reminder)
+
+			for {
+				nextTime := expr.Next(time.Now())
+				timer := time.NewTimer(time.Until(nextTime))
+				log.Printf("Next trigger time for reminder '%s' is: %v", reminder.Name, nextTime)
+				<-timer.C
+				go func() {
+					ch <- reminder
+				}()
+			}
+		}()
+	}
+
+	return nil
 }
