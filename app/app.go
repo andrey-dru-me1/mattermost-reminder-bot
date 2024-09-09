@@ -13,9 +13,14 @@ import (
 	"github.com/gorhill/cronexpr"
 )
 
+type TriggeredReminder struct {
+	Reminder models.Reminder
+	Complete chan bool
+}
+
 type Application struct {
 	Db                 *sql.DB
-	TriggeredReminders <-chan models.Reminder
+	TriggeredReminders <-chan TriggeredReminder
 	NewReminders       chan<- models.Reminder
 }
 
@@ -58,8 +63,8 @@ func setupDatabase() (*sql.DB, error) {
 	return db, nil
 }
 
-func setupRemindGenerator(db *sql.DB) (<-chan models.Reminder, chan<- models.Reminder, error) {
-	triggeredReminders := make(chan models.Reminder, 255)
+func setupRemindGenerator(db *sql.DB) (<-chan TriggeredReminder, chan<- models.Reminder, error) {
+	triggeredReminders := make(chan TriggeredReminder, 255)
 	newReminders := make(chan models.Reminder)
 
 	reminders, err := repositories.GetReminders(db)
@@ -78,10 +83,9 @@ func setupRemindGenerator(db *sql.DB) (<-chan models.Reminder, chan<- models.Rem
 	return triggeredReminders, newReminders, nil
 }
 
-func generateReminds(triggeredReminders chan<- models.Reminder, newReminders <-chan models.Reminder) {
+func generateReminds(triggeredReminders chan<- TriggeredReminder, newReminders <-chan models.Reminder) {
 	log.Printf("Begin generating reminds")
 	for reminder, more := <-newReminders; more; reminder, more = <-newReminders {
-		log.Printf("Got a new reminder %d: %s\n", reminder.ID, reminder.Name)
 		go func() {
 			expr, err := cronexpr.Parse(reminder.Rule)
 			if err != nil {
@@ -90,16 +94,21 @@ func generateReminds(triggeredReminders chan<- models.Reminder, newReminders <-c
 				)
 				return
 			}
-			log.Printf("Reminder detected: %v\n", reminder)
+			log.Printf("Reminder %d (%s) starts generating reminds\n", reminder.ID, reminder.Name)
 
 			for {
 				nextTime := expr.Next(time.Now())
 				timer := time.NewTimer(time.Until(nextTime))
 				log.Printf("Next trigger time for reminder '%s' is: %v", reminder.Name, nextTime)
 				<-timer.C
+				complete := make(chan bool)
 				go func() {
-					triggeredReminders <- reminder
+					triggeredReminders <- TriggeredReminder{
+						Reminder: reminder,
+						Complete: complete,
+					}
 				}()
+				<-complete
 			}
 		}()
 	}

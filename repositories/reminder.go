@@ -48,7 +48,10 @@ func extractReminderFromRow(row multiScanner) (*models.Reminder, error) {
 }
 
 func GetReminder(db *sql.DB, reminderID int64) (*models.Reminder, error) {
-	row := db.QueryRow("SELECT id, name, rule, channel, created_at, modified_at FROM reminders")
+	row := db.QueryRow(
+		"SELECT id, name, rule, channel, created_at, modified_at FROM reminders WHERE id = ?",
+		reminderID,
+	)
 
 	reminder, err := extractReminderFromRow(row)
 	if err != nil {
