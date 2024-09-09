@@ -20,7 +20,7 @@
 
 Bot has several commands:
 
-- `create NAME CRON-RULE` - creates new reminder with the specified rule
+- `add NAME CRON-RULE` - creates new reminder with the specified rule
 - `list` - shows the reminders table with their names, rules and channels
 
 `CRON-RULE` could be set with variable amount of values, but recommended and tested is 7.

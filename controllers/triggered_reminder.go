@@ -9,11 +9,11 @@ import (
 )
 
 func GetTriggeredReminders(c *gin.Context) {
-	reminderChan := c.MustGet("reminderChan").(chan models.Reminder)
+	triggeredReminders := c.MustGet("triggeredReminders").(chan models.Reminder)
 	var reminders []models.Reminder
 	for {
 		select {
-		case reminder := <-reminderChan:
+		case reminder := <-triggeredReminders:
 			log.Printf("Got a triggered reminder: %v\n", reminder)
 			reminders = append(reminders, reminder)
 		default:

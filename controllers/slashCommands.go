@@ -4,12 +4,21 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/controllers/dtos"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/app"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/dtos"
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/services"
 	"github.com/gin-gonic/gin"
 )
+
+const usage = `Usage: /reminder COMMAND OPTIONS
+	commands:
+	- add, create NAME CRON-RULE - creates new reminder
+	- list, ls - lists all reminders
+	- delete, del, remove, rm ID - deletes a reminder with ID identifier
+`
 
 type mattermostRequest struct {
 	ChannelName string `form:"channel_name"`
@@ -17,18 +26,9 @@ type mattermostRequest struct {
 	Text        string `form:"text"`
 }
 
-func mattermostReminderCreate(c *gin.Context, req mattermostRequest, tokens []string) {
+func mattermostReminderCreate(c *gin.Context, app *app.Application, req mattermostRequest, tokens []string) {
 	if len(tokens) < 3 {
-		c.JSON(http.StatusOK, gin.H{"text": `Usage: '/reminder create [NAME] "[CRON-RULE]"'`})
-		return
-	}
-
-	db, err := extractDB(c)
-	if err != nil {
-		c.JSON(
-			http.StatusOK,
-			gin.H{"text": err.Error()},
-		)
+		c.JSON(http.StatusOK, gin.H{"text": `Usage: '/reminder create NAME "CRON-RULE"'`})
 		return
 	}
 
@@ -37,7 +37,7 @@ func mattermostReminderCreate(c *gin.Context, req mattermostRequest, tokens []st
 		Rule:    tokens[2],
 		Channel: req.ChannelName,
 	}
-	_, err = services.CreateReminder(db, rem)
+	_, err := services.CreateReminder(app, rem)
 	if err != nil {
 		c.JSON(
 			http.StatusOK,
@@ -52,17 +52,8 @@ func mattermostReminderCreate(c *gin.Context, req mattermostRequest, tokens []st
 	)
 }
 
-func mattermostReminderList(c *gin.Context) {
-	db, err := extractDB(c)
-	if err != nil {
-		c.JSON(
-			http.StatusOK,
-			gin.H{"text": err.Error()},
-		)
-		return
-	}
-
-	reminders, err := services.GetReminders(db)
+func mattermostReminderList(c *gin.Context, app *app.Application) {
+	reminders, err := services.GetReminders(app)
 	if err != nil {
 		c.JSON(
 			http.StatusOK,
@@ -91,15 +82,35 @@ func mattermostReminderList(c *gin.Context) {
 	)
 }
 
-func mattemostReminderDelete(c *gin.Context, req mattermostRequest, tokens []string) {
+func mattermostReminderDelete(c *gin.Context, app *app.Application, tokens []string) {
+	reminderIDString := tokens[1]
+	reminderID, err := strconv.ParseInt(reminderIDString, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"text": `Usage: '/reminder delete ID'`})
+		return
+	}
 
+	if err := services.DeleteReminder(app, reminderID); err != nil {
+		c.JSON(http.StatusOK, gin.H{"text": fmt.Sprintf("Id %d was not found", reminderID)})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"text": "Reminder successfully deleted"})
 }
 
 func MattermostReminder(c *gin.Context) {
 	var req mattermostRequest
-
 	if err := c.Bind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	app, err := extractApp(c)
+	if err != nil {
+		c.JSON(
+			http.StatusOK,
+			gin.H{"text": err.Error()},
+		)
 		return
 	}
 
@@ -107,17 +118,20 @@ func MattermostReminder(c *gin.Context) {
 
 	if strings.EqualFold(req.Command, "/reminder") {
 		switch tokens[0] {
-		case "add":
-			mattermostReminderCreate(c, req, tokens)
+		case "add", "create":
+			mattermostReminderCreate(c, app, req, tokens)
 			return
-		case "list":
-			mattermostReminderList(c)
+		case "list", "ls":
+			mattermostReminderList(c, app)
+			return
+		case "delete", "del", "remove", "rm":
+			mattermostReminderDelete(c, app, tokens)
 			return
 		}
 	}
 	c.JSON(
 		http.StatusOK,
-		gin.H{"text": "Usage: '/reminder [add|list]'"},
+		gin.H{"text": usage},
 	)
 }
 

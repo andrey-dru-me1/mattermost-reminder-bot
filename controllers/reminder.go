@@ -2,29 +2,35 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/controllers/dtos"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/dtos"
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/services"
 	"github.com/gin-gonic/gin"
 )
 
 func UpdateReminder(c *gin.Context) {
-	db, err := extractDB(c)
+	app, err := extractApp(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	reminderID := c.Param("id")
+	reminderIDString := c.Param("id")
+	reminderID, err := strconv.ParseInt(reminderIDString, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-	var request dtos.ReminderDTO
+	var reminderDTO dtos.ReminderDTO
 
-	if err := c.BindJSON(&request); err != nil {
+	if err := c.BindJSON(&reminderDTO); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := services.UpdateReminder(db, reminderID, request); err != nil {
+	if err := services.UpdateReminder(app, reminderID, reminderDTO); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -33,7 +39,7 @@ func UpdateReminder(c *gin.Context) {
 }
 
 func CreateReminder(c *gin.Context) {
-	db, err := extractDB(c)
+	app, err := extractApp(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -46,7 +52,7 @@ func CreateReminder(c *gin.Context) {
 		return
 	}
 
-	id, err := services.CreateReminder(db, request)
+	id, err := services.CreateReminder(app, request)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -59,13 +65,13 @@ func CreateReminder(c *gin.Context) {
 }
 
 func GetReminders(c *gin.Context) {
-	db, err := extractDB(c)
+	app, err := extractApp(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	reminders, err := services.GetReminders(db)
+	reminders, err := services.GetReminders(app)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -75,28 +81,21 @@ func GetReminders(c *gin.Context) {
 }
 
 func DeleteReminder(c *gin.Context) {
-	db, err := extractDB(c)
+	app, err := extractApp(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	userID := c.Param("id")
-
-	res, err := db.Exec("DELETE FROM reminders WHERE id = ?", userID)
+	reminderIDString := c.Param("id")
+	reminderID, err := strconv.ParseInt(reminderIDString, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	}
-
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if rowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Reminder not found"})
-		return
+	if err := services.DeleteReminder(app, reminderID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Reminder deleted successfully"})

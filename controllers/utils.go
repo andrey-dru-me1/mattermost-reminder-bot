@@ -1,16 +1,16 @@
 package controllers
 
 import (
-	"database/sql"
 	"fmt"
 
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/app"
 	"github.com/gin-gonic/gin"
 )
 
-func extractDB(c *gin.Context) (*sql.DB, error) {
-	db, exists := c.MustGet("db").(*sql.DB)
+func extractApp(c *gin.Context) (*app.Application, error) {
+	app, exists := c.MustGet("db").(*app.Application)
 	if !exists {
-		return nil, fmt.Errorf("database connection not found")
+		return nil, fmt.Errorf("application not provided")
 	}
-	return db, nil
+	return app, nil
 }
