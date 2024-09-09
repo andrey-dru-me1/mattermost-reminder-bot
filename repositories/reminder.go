@@ -15,13 +15,14 @@ type multiScanner interface {
 
 func extractReminderFromRow(row multiScanner) (*models.Reminder, error) {
 	var id int
-	var name, rule, channel, createdAtString, modifiedAtString string
+	var name, rule, channel, message, createdAtString, modifiedAtString string
 
 	if err := row.Scan(
 		&id,
 		&name,
 		&rule,
 		&channel,
+		&message,
 		&createdAtString,
 		&modifiedAtString,
 	); err != nil {
@@ -42,6 +43,7 @@ func extractReminderFromRow(row multiScanner) (*models.Reminder, error) {
 		Name:       name,
 		Rule:       rule,
 		Channel:    channel,
+		Message:    message,
 		CreatedAt:  createdAt,
 		ModifiedAt: modifiedAt,
 	}, nil
@@ -49,7 +51,7 @@ func extractReminderFromRow(row multiScanner) (*models.Reminder, error) {
 
 func GetReminder(db *sql.DB, reminderID int64) (*models.Reminder, error) {
 	row := db.QueryRow(
-		"SELECT id, name, rule, channel, created_at, modified_at FROM reminders WHERE id = ?",
+		"SELECT id, name, rule, channel, message, created_at, modified_at FROM reminders WHERE id = ?",
 		reminderID,
 	)
 
@@ -62,7 +64,7 @@ func GetReminder(db *sql.DB, reminderID int64) (*models.Reminder, error) {
 }
 
 func GetReminders(db *sql.DB) ([]models.Reminder, error) {
-	rows, err := db.Query("SELECT id, name, rule, channel, created_at, modified_at FROM reminders")
+	rows, err := db.Query("SELECT id, name, rule, channel, message, created_at, modified_at FROM reminders")
 	if err != nil {
 		return nil, fmt.Errorf("execute query to extract data from reminders table: %w", err)
 	}
@@ -84,10 +86,11 @@ func GetReminders(db *sql.DB) ([]models.Reminder, error) {
 
 func UpdateReminder(db *sql.DB, reminderID int64, req dtos.ReminderDTO) error {
 	res, err := db.Exec(
-		"UPDATE reminders SET name = ?, rule = ?, channel = ? WHERE id = ?",
+		"UPDATE reminders SET name = ?, rule = ?, channel = ?, message = ? WHERE id = ?",
 		req.Name,
 		req.Rule,
 		req.Channel,
+		req.Message,
 		reminderID,
 	)
 	if err != nil {
@@ -108,10 +111,11 @@ func UpdateReminder(db *sql.DB, reminderID int64, req dtos.ReminderDTO) error {
 
 func CreateReminder(db *sql.DB, req dtos.ReminderDTO) (int64, error) {
 	res, err := db.Exec(
-		"INSERT INTO reminders (name, rule, channel) VALUES (?, ?, ?)",
+		"INSERT INTO reminders (name, rule, channel, message) VALUES (?, ?, ?, ?)",
 		req.Name,
 		req.Rule,
 		req.Channel,
+		req.Message,
 	)
 	if err != nil {
 		return 0, err

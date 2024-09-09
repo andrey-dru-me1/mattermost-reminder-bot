@@ -15,7 +15,7 @@ import (
 
 const usage = `Usage: /reminder COMMAND OPTIONS
   commands:
-  - add, create NAME CRON-RULE - creates new reminder
+  - add, create NAME CRON-RULE MESSAGE - creates new reminder
   - list, ls - lists all reminders
   - delete, del, remove, rm ID - deletes a reminder with ID identifier
 
@@ -29,14 +29,15 @@ type mattermostRequest struct {
 }
 
 func mattermostReminderCreate(c *gin.Context, app *app.Application, req mattermostRequest, tokens []string) {
-	if len(tokens) < 3 {
-		c.JSON(http.StatusOK, gin.H{"text": `Usage: '/reminder create NAME "CRON-RULE"'`})
+	if len(tokens) < 4 {
+		c.JSON(http.StatusOK, gin.H{"text": `Usage: '/reminder create NAME CRON-RULE MESSAGE'`})
 		return
 	}
 
 	rem := dtos.ReminderDTO{
 		Name:    tokens[1],
 		Rule:    tokens[2],
+		Message: tokens[3],
 		Channel: req.ChannelName,
 	}
 	_, err := services.CreateReminder(app, rem)
@@ -65,15 +66,16 @@ func mattermostReminderList(c *gin.Context, app *app.Application) {
 	}
 
 	var sb strings.Builder
-	sb.WriteString("|Id|Name|Channel|Rule|\n|-|-|-|-|\n")
+	sb.WriteString("|Id|Name|Channel|Rule|Message|\n|-|-|-|-|-|\n")
 	for _, reminder := range reminders {
 		sb.WriteString(
 			fmt.Sprintf(
-				"|%d|%s|%s|%s|\n",
+				"|%d|%s|%s|%s|%s|\n",
 				reminder.ID,
 				reminder.Name,
 				reminder.Channel,
 				reminder.Rule,
+				reminder.Message,
 			),
 		)
 	}
