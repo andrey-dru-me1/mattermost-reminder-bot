@@ -26,7 +26,7 @@ services:
     volumes:
       - ./reminder:/root
     working_dir: /root
-    command: ["go", "run", "."]
+    command: [ "go", "run", "." ]
     healthcheck:
       test: [ "CMD", "curl", "localhost:8080/healthcheck" ]
       interval: 10m
@@ -38,10 +38,12 @@ services:
         condition: service_healthy
   poller:
     image: golang
+    env_file:
+      - .env
     volumes:
       - ./poller:/root
     working_dir: /root
-    command: ["go", "run", "."]
+    command: [ "go", "run", "." ]
     depends_on:
       reminder:
         condition: service_healthy
@@ -51,7 +53,6 @@ services:
     image: mattermost/mattermost-preview
     container_name: test_mm
     ports:
-    - "8065:8065"
+      - "8065:8065"
     environment:
       MM_SERVICESETTINGS_ENABLELOCALMODE: "true"
-

@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -26,8 +27,9 @@ func printRemind(reminder reminder) {
 		reminder.Channel,
 		reminder.Message,
 	))
+
 	resp, err := http.Post(
-		"http://test_mm:8065/hooks/993ksxbh1jrhiqsnqe4ed6w1ay",
+		os.Getenv("MM_IN_HOOK"),
 		"application/json",
 		bytes.NewBuffer(jsonStr),
 	)
