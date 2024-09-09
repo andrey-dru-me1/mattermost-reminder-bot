@@ -61,7 +61,7 @@ func GetReminder(db *sql.DB, reminderID int64) (*models.Reminder, error) {
 func GetReminders(db *sql.DB) ([]models.Reminder, error) {
 	rows, err := db.Query("SELECT id, name, rule, channel, created_at, modified_at FROM reminders")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("execute query to extract data from reminders table: %w", err)
 	}
 	defer rows.Close()
 
@@ -70,7 +70,7 @@ func GetReminders(db *sql.DB) ([]models.Reminder, error) {
 	for rows.Next() {
 		reminder, err := extractReminderFromRow(rows)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("extract reminder from row: %w", err)
 		}
 
 		reminders = append(reminders, *reminder)
