@@ -19,8 +19,39 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-  # app:
-  #   build: .
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
+  reminder:
+    image: golang
+    env_file:
+      - ./.env
+    volumes:
+      - ./reminder:/root
+    working_dir: /root
+    command: ["go", "run", "."]
+    healthcheck:
+      test: [ "CMD", "curl", "localhost:8080/healthcheck" ]
+      interval: 10m
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      db:
+        condition: service_healthy
+  poller:
+    image: golang
+    volumes:
+      - ./poller:/root
+    working_dir: /root
+    command: ["go", "run", "."]
+    depends_on:
+      reminder:
+        condition: service_healthy
+  test_mm:
+    profiles:
+      - test
+    image: mattermost/mattermost-preview
+    container_name: test_mm
+    ports:
+    - "8065:8065"
+    environment:
+      MM_SERVICESETTINGS_ENABLELOCALMODE: "true"
+

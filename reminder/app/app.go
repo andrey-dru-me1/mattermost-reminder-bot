@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/models"
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/repositories"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/models"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/repositories"
 	"github.com/go-sql-driver/mysql"
 	"github.com/gorhill/cronexpr"
 )

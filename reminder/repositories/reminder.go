@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/dtos"
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/models"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/dtos"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/models"
 )
 
 type multiScanner interface {

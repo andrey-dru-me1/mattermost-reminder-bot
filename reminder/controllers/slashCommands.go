@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/app"
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/dtos"
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/services"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/app"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/dtos"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/services"
 	"github.com/gin-gonic/gin"
 )
 

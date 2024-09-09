@@ -3,7 +3,7 @@ package controllers
 import (
 	"fmt"
 
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/app"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/app"
 	"github.com/gin-gonic/gin"
 )
 

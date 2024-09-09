@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/app"
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/models"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/app"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/models"
 	"github.com/gin-gonic/gin"
 )
 

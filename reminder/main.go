@@ -2,19 +2,14 @@ package main
 
 import (
 	"log"
+	"net/http"
 
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/app"
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/controllers"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/app"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/controllers"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	app, err := app.SetupApplication()
 	if err != nil {
 		log.Fatal(err)
@@ -28,6 +23,7 @@ func main() {
 		ctx.Next()
 	})
 
+	router.GET("/healthcheck", func(ctx *gin.Context) { ctx.Status(http.StatusOK) })
 	router.GET("/reminders", controllers.GetReminders)
 	router.PUT("/reminder/:id", controllers.UpdateReminder)
 	router.POST("/reminders", controllers.CreateReminder)

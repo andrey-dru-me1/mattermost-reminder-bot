@@ -1,10 +1,10 @@
 package services
 
 import (
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/app"
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/dtos"
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/models"
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/repositories"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/app"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/dtos"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/models"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/repositories"
 )
 
 func CreateReminder(app *app.Application, reminderDTO dtos.ReminderDTO) (int64, error) {

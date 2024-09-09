@@ -1,4 +1,4 @@
-module github.com/andrey-dru-me1/mattermost-reminder-bot
+module github.com/andrey-dru-me1/mattermost-reminder-bot/reminder
 
 go 1.23.0
 
