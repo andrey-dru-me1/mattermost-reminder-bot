@@ -55,8 +55,8 @@ func mattermostReminderCreate(c *gin.Context, app *app.Application, req mattermo
 	)
 }
 
-func mattermostReminderList(c *gin.Context, app *app.Application) {
-	reminders, err := services.GetReminders(app)
+func mattermostReminderList(c *gin.Context, app *app.Application, req mattermostRequest) {
+	reminders, err := services.GetRemindersByChannel(app, req.ChannelName)
 	if err != nil {
 		c.JSON(
 			http.StatusOK,
@@ -126,7 +126,7 @@ func MattermostReminder(c *gin.Context) {
 			mattermostReminderCreate(c, app, req, tokens)
 			return
 		case "list", "ls":
-			mattermostReminderList(c, app)
+			mattermostReminderList(c, app, req)
 			return
 		case "delete", "del", "remove", "rm":
 			mattermostReminderDelete(c, app, tokens)

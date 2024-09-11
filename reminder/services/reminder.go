@@ -36,6 +36,10 @@ func GetReminder(app *app.Application, reminderID int64) (*models.Reminder, erro
 	return repositories.GetReminder(app.Db, reminderID)
 }
 
+func GetRemindersByChannel(app *app.Application, channel string) ([]models.Reminder, error) {
+	return repositories.GetRemindersByChannel(app.Db, channel)
+}
+
 func GetReminders(app *app.Application) ([]models.Reminder, error) {
 	return repositories.GetReminders(app.Db)
 }

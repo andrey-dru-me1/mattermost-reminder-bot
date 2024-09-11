@@ -84,6 +84,30 @@ func GetReminders(db *sql.DB) ([]models.Reminder, error) {
 	return reminders, nil
 }
 
+func GetRemindersByChannel(db *sql.DB, channel string) ([]models.Reminder, error) {
+	rows, err := db.Query(
+		"SELECT id, name, rule, channel, message, created_at, modified_at FROM reminders WHERE channel = ?",
+		channel,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("execute query to extract data from reminders table: %w", err)
+	}
+	defer rows.Close()
+
+	var reminders []models.Reminder
+
+	for rows.Next() {
+		reminder, err := extractReminderFromRow(rows)
+		if err != nil {
+			return nil, fmt.Errorf("extract reminder from row: %w", err)
+		}
+
+		reminders = append(reminders, *reminder)
+	}
+
+	return reminders, nil
+}
+
 func UpdateReminder(db *sql.DB, reminderID int64, req dtos.ReminderDTO) error {
 	res, err := db.Exec(
 		"UPDATE reminders SET name = ?, rule = ?, channel = ?, message = ? WHERE id = ?",
