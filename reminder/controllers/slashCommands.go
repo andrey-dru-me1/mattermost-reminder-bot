@@ -65,25 +65,32 @@ func mattermostReminderList(c *gin.Context, app *app.Application, req mattermost
 		return
 	}
 
-	var sb strings.Builder
-	sb.WriteString("|Id|Name|Channel|Rule|Message|\n|-|-|-|-|-|\n")
-	for _, reminder := range reminders {
-		sb.WriteString(
-			fmt.Sprintf(
-				"|%d|%s|%s|%s|%s|\n",
-				reminder.ID,
-				reminder.Name,
-				reminder.Channel,
-				reminder.Rule,
-				reminder.Message,
-			),
+	if len(reminders) > 0 {
+		var sb strings.Builder
+		sb.WriteString("|Id|Name|Channel|Rule|Message|\n|-|-|-|-|-|\n")
+		for _, reminder := range reminders {
+			sb.WriteString(
+				fmt.Sprintf(
+					"|%d|%s|%s|%s|%s|\n",
+					reminder.ID,
+					reminder.Name,
+					reminder.Channel,
+					reminder.Rule,
+					reminder.Message,
+				),
+			)
+		}
+
+		c.JSON(
+			http.StatusOK,
+			gin.H{"text": sb.String()},
+		)
+	} else {
+		c.JSON(
+			http.StatusOK,
+			gin.H{"text": "There are no reminders yet in this channel! Add a new one using `/reminder add ...`"},
 		)
 	}
-
-	c.JSON(
-		http.StatusOK,
-		gin.H{"text": sb.String()},
-	)
 }
 
 func mattermostReminderDelete(c *gin.Context, app *app.Application, tokens []string) {
@@ -95,7 +102,9 @@ func mattermostReminderDelete(c *gin.Context, app *app.Application, tokens []str
 	}
 
 	if err := services.DeleteReminder(app, reminderID); err != nil {
-		c.JSON(http.StatusOK, gin.H{"text": fmt.Sprintf("Id %d was not found", reminderID)})
+		c.JSON(http.StatusOK, gin.H{
+			"text": fmt.Sprintf("Error removing reminder %d: %s", reminderID, err.Error()),
+		})
 		return
 	}
 

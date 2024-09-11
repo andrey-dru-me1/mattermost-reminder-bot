@@ -154,7 +154,7 @@ func CreateReminder(db *sql.DB, req dtos.ReminderDTO) (int64, error) {
 }
 
 func DeleteReminder(db *sql.DB, reminderID int64) error {
-	res, err := db.Exec(`--sql DELETE FROM reminders WHERE id = ?`, reminderID)
+	res, err := db.Exec(`DELETE FROM reminders WHERE id = ?`, reminderID)
 	if err != nil {
 		return err
 	}
