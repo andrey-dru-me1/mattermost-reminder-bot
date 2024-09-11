@@ -5,12 +5,13 @@ import (
 	"net/http"
 
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/app"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/services"
 	"github.com/gin-gonic/gin"
 )
 
 func GetTriggeredReminders(c *gin.Context) {
 	app := c.MustGet("app").(*app.Application)
-	c.JSON(http.StatusOK, app.RemindManager.GetReminds())
+	c.JSON(http.StatusOK, services.GetTriggeredReminders(app))
 }
 
 func CompleteReminds(c *gin.Context) {
@@ -25,6 +26,6 @@ func CompleteReminds(c *gin.Context) {
 		return
 	}
 
-	app.RemindManager.CompleteReminds(ids...)
+	services.CompleteReminds(app, ids)
 	c.Status(http.StatusOK)
 }
