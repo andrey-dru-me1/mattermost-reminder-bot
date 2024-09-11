@@ -18,7 +18,7 @@ func CreateReminder(app *app.Application, reminderDTO dtos.ReminderDTO) (int64, 
 		return 0, err
 	}
 
-	app.NewReminders <- *reminder
+	app.RemindManager.AddReminders(*reminder)
 
 	return id, nil
 }
@@ -28,6 +28,7 @@ func UpdateReminder(app *app.Application, reminderID int64, reminderDTO dtos.Rem
 }
 
 func DeleteReminder(app *app.Application, reminderID int64) error {
+	app.RemindManager.RemoveReminders(int(reminderID))
 	return repositories.DeleteReminder(app.Db, reminderID)
 }
 

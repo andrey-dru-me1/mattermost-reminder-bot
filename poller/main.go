@@ -38,7 +38,24 @@ func printRemind(reminder reminder) {
 		return
 	}
 
-	log.Println(resp)
+	log.Println("Response from mattermost server:", resp)
+	if resp.StatusCode == http.StatusOK {
+		jsonStr := []byte(fmt.Sprintf(
+			`[%d]`,
+			reminder.ID,
+		))
+		resp, err := http.Post(
+			"http://reminder:8080/reminders/triggered",
+			"application/json",
+			bytes.NewBuffer(jsonStr),
+		)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		log.Println("Response from complete reminds:", resp)
+	}
 }
 
 func processReminders() error {

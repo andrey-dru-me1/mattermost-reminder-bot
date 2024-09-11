@@ -1,28 +1,30 @@
 package controllers
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/app"
-	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/models"
 	"github.com/gin-gonic/gin"
 )
 
 func GetTriggeredReminders(c *gin.Context) {
 	app := c.MustGet("app").(*app.Application)
-	triggeredReminders := app.TriggeredReminders
+	c.JSON(http.StatusOK, app.RemindManager.GetReminds())
+}
 
-	var reminders []models.Reminder
-	for {
-		select {
-		case triggered := <-triggeredReminders:
-			log.Printf("Collect triggered reminder %d: %s\n", triggered.Reminder.ID, triggered.Reminder.Name)
-			reminders = append(reminders, triggered.Reminder)
-			triggered.Complete <- true
-		default:
-			c.JSON(http.StatusOK, reminders)
-			return
-		}
+func CompleteReminds(c *gin.Context) {
+	app := c.MustGet("app").(*app.Application)
+
+	var ids []int
+	if err := c.BindJSON(&ids); err != nil {
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": fmt.Sprintf("Request should consist of an id array: %s", err.Error())},
+		)
+		return
 	}
+
+	app.RemindManager.CompleteReminds(ids...)
+	c.Status(http.StatusOK)
 }

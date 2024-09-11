@@ -30,6 +30,7 @@ func main() {
 	router.DELETE("/reminder/:id", controllers.DeleteReminder)
 
 	router.GET("/reminders/triggered", controllers.GetTriggeredReminders)
+	router.POST("/reminders/triggered", controllers.CompleteReminds)
 
 	router.POST("/mattermost/reminders", controllers.MattermostReminder)
 
