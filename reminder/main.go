@@ -34,5 +34,5 @@ func main() {
 
 	router.POST("/mattermost/reminders", controllers.MattermostReminder)
 
-	router.Run(":8080")
+	router.Run()
 }
