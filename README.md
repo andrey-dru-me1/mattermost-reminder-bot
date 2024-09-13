@@ -77,12 +77,3 @@ All the uppercased from the command above you specify in your `.env` file. Using
 ```bash
 migrate -database 'mysql://reminders:XXXXXX@tcp(db:3306)/reminders' -source file://migrations up
 ```
-
-## Bugs
-
-- [ ] `/reminder list` should list only reminders belong to the current channel (now command prints all of them)
-- [ ] Reminder removal should stop reminder to trigger reminds (now it's not)
-
-## ToDos
-
-- [ ] Make more human-readable rule setting

@@ -1,74 +1,79 @@
 package rman
 
 import (
+	"database/sql"
+	"fmt"
 	"log"
 	"time"
 
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/internal/syncmap"
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/models"
+	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/repositories"
 	"github.com/gorhill/cronexpr"
 )
 
 type RemindManager interface {
-	AddReminders(reminders ...models.Reminder)
-	RemoveReminders(ids ...int)
 	TriggerReminds(reminders ...models.Reminder)
 	GetReminds() []models.Reminder
 	CompleteReminds(ids ...int)
+	AddReminders(reminders ...models.Reminder)
+	RemoveReminders(ids ...int)
 }
 
 type defaultRemindManager struct {
 	cancels   *syncmap.Map[int, chan bool]
 	completes *syncmap.Map[int, chan bool]
 	reminds   *syncmap.Map[int, models.Reminder]
+	db        *sql.DB
 }
 
-func New() RemindManager {
+func New(db *sql.DB) RemindManager {
 	return &defaultRemindManager{
 		cancels:   syncmap.New[int, chan bool](),
 		completes: syncmap.New[int, chan bool](),
-		reminds:   syncmap.New[int, models.Reminder]()}
+		reminds:   syncmap.New[int, models.Reminder](),
+		db:        db}
 }
 
-func (drm *defaultRemindManager) TriggerReminds(reminders ...models.Reminder) {
+func (rm *defaultRemindManager) TriggerReminds(reminders ...models.Reminder) {
 	for _, reminder := range reminders {
-		drm.reminds.Set(reminder.ID, reminder)
+		rm.reminds.Set(reminder.ID, reminder)
 	}
 }
 
-func (drm *defaultRemindManager) GetReminds() []models.Reminder {
+func (rm *defaultRemindManager) GetReminds() []models.Reminder {
 	var reminders []models.Reminder
-	drm.reminds.Range(func(key int, value models.Reminder) bool {
+	rm.reminds.Range(func(key int, value models.Reminder) bool {
 		reminders = append(reminders, value)
 		return true
 	})
 	return reminders
 }
 
-func (drm *defaultRemindManager) CompleteReminds(ids ...int) {
+func (rm *defaultRemindManager) CompleteReminds(ids ...int) {
 	for _, id := range ids {
-		if complete, ok := drm.completes.Get(id); ok {
+		if complete, ok := rm.completes.Get(id); ok {
 			complete <- true
-			drm.reminds.Delete(id)
+			rm.reminds.Delete(id)
 		}
 	}
 }
 
-func (drm *defaultRemindManager) AddReminders(reminders ...models.Reminder) {
+func (rm *defaultRemindManager) AddReminders(reminders ...models.Reminder) {
 	for _, reminder := range reminders {
-		drm.cancels.Set(reminder.ID, make(chan bool))
-		drm.completes.Set(reminder.ID, make(chan bool))
-		go drm.generateReminds(reminder)
+		rm.cancels.Set(reminder.ID, make(chan bool))
+		rm.completes.Set(reminder.ID, make(chan bool))
+		go rm.generateReminds(reminder)
 	}
 }
 
-func (drm *defaultRemindManager) RemoveReminders(ids ...int) {
+func (rm *defaultRemindManager) RemoveReminders(ids ...int) {
 	for _, id := range ids {
-		if cancel, ok := drm.cancels.Get(id); ok {
+		if cancel, ok := rm.cancels.Get(id); ok {
 			cancel <- true
 			close(cancel)
 
-			if complete, ok := drm.completes.Get(id); ok {
+			if complete, ok := rm.completes.Get(id); ok {
 				select {
 				case complete <- true:
 				default:
@@ -76,14 +81,14 @@ func (drm *defaultRemindManager) RemoveReminders(ids ...int) {
 				close(complete)
 			}
 
-			drm.reminds.Delete(id)
-			drm.completes.Delete(id)
-			drm.cancels.Delete(id)
+			rm.reminds.Delete(id)
+			rm.completes.Delete(id)
+			rm.cancels.Delete(id)
 		}
 	}
 }
 
-func (drm *defaultRemindManager) generateReminds(reminder models.Reminder) {
+func (rm *defaultRemindManager) generateReminds(reminder models.Reminder) {
 	expr, err := cronexpr.Parse(reminder.Rule)
 	if err != nil {
 		log.Printf(
@@ -93,26 +98,42 @@ func (drm *defaultRemindManager) generateReminds(reminder models.Reminder) {
 	}
 	log.Printf("Reminder %d (%s) starts generating reminds\n", reminder.ID, reminder.Name)
 
-	cancel, ok := drm.cancels.Get(reminder.ID)
+	cancel, ok := rm.cancels.Get(reminder.ID)
 	if !ok {
 		log.Printf("Cancel channel for a reminder with id %d was not created\n", reminder.ID)
 		return
 	}
 
-	complete, ok := drm.completes.Get(reminder.ID)
+	complete, ok := rm.completes.Get(reminder.ID)
 	if !ok {
 		log.Printf("Cancel channel for a reminder with id %d was not created\n", reminder.ID)
 		return
 	}
 
 	for {
-		nextTime := expr.Next(time.Now())
+		now := time.Now()
+		if channel, err := repositories.GetChannel(rm.db, reminder.Channel); err == nil {
+			if loc, err := time.LoadLocation(channel.TimeZone); err == nil {
+				now = now.In(loc)
+			} else {
+				fmt.Printf(
+					"Cannot parse location '%s' for the channel '%s': %s\n",
+					loc,
+					channel.Name,
+					err,
+				)
+			}
+		} else {
+			fmt.Printf("Channel row '%s' not found: %s\n", reminder.Channel, err)
+		}
+
+		nextTime := expr.Next(now).UTC()
 		timer := time.NewTimer(time.Until(nextTime))
-		log.Printf("Next trigger time for reminder '%s' is: %v", reminder.Name, nextTime)
+		log.Printf("Next trigger time for reminder '%s' is: %v\n", reminder.Name, nextTime)
 		select {
 		case <-timer.C:
 			go func() {
-				drm.reminds.Set(reminder.ID, reminder)
+				rm.reminds.Set(reminder.ID, reminder)
 			}()
 			<-complete
 		case <-cancel:

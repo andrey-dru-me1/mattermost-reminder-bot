@@ -27,7 +27,7 @@ func SetupApplication() (*Application, error) {
 		return nil, err
 	}
 
-	rman := rman.New()
+	rman := rman.New(db)
 	err = setupRemindGenerator(db, rman)
 	if err != nil {
 		return nil, err
