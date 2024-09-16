@@ -20,7 +20,7 @@ const usage = `Usage: /reminder COMMAND OPTIONS
 Commands:
 - add, create NAME CRON-RULE MESSAGE - creates new reminder
 - list, ls - lists all reminders
-- delete, del, remove, rm ID... - deletes a reminder with ID identifier
+- delete, del, remove, rm ID... - deletes a reminders with ID... identifiers
 - timezone, tz LOCATION - updates channel timezone
 - timezone, tz - shows current location
 
