@@ -10,6 +10,7 @@ import (
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/models"
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/repositories"
 	"github.com/gorhill/cronexpr"
+	"github.com/rs/zerolog"
 )
 
 type RemindManager interface {
@@ -25,15 +26,17 @@ type defaultRemindManager struct {
 	completes       *syncmap.Map[int64, chan<- bool]
 	reminds         *syncmap.Map[int64, models.Reminder]
 	defaultLocation *time.Location
+	logger          zerolog.Logger
 	db              *sql.DB
 }
 
-func New(db *sql.DB, defaultLocation *time.Location) RemindManager {
+func New(db *sql.DB, defaultLocation *time.Location, logger zerolog.Logger) RemindManager {
 	return &defaultRemindManager{
 		cancels:         syncmap.New[int64, chan<- bool](),
 		completes:       syncmap.New[int64, chan<- bool](),
 		reminds:         syncmap.New[int64, models.Reminder](),
 		db:              db,
+		logger:          logger,
 		defaultLocation: defaultLocation,
 	}
 }
@@ -112,7 +115,7 @@ func (rm *defaultRemindManager) generateReminds(
 	cancel <-chan bool,
 	complete <-chan bool,
 ) {
-	log.Printf("Reminder %d (%s) starts generating reminds\n", reminder.ID, reminder.Name)
+	rm.logger.Info().Str("Reminder", fmt.Sprintf("%v", reminder)).Msg("Starts generating reminds")
 
 	for {
 		now := time.Now().In(rm.defaultLocation)
@@ -120,15 +123,10 @@ func (rm *defaultRemindManager) generateReminds(
 			if loc, err := time.LoadLocation(channel.TimeZone); err == nil {
 				now = now.In(loc)
 			} else {
-				fmt.Printf(
-					"Cannot parse location '%s' for the channel '%s': %s\n",
-					loc,
-					channel.Name,
-					err,
-				)
+				rm.logger.Error().Err(err).Str("Location", loc.String()).Any("Channel", channel).Msg("Cannot parse location")
 			}
 		} else {
-			fmt.Printf("Channel row '%s' not found: %s\n", reminder.Channel, err)
+			rm.logger.Error().Err(err).Any("Channel", reminder.Channel).Msg("Channel ot found in db")
 		}
 
 		nextTime := expr.Next(now).UTC()
@@ -139,7 +137,7 @@ func (rm *defaultRemindManager) generateReminds(
 		}
 
 		timer := time.NewTimer(time.Until(nextTime))
-		log.Printf("Next trigger time for reminder '%s' is: %v\n", reminder.Name, nextTime)
+		rm.logger.Info().Any("Reminder", reminder).Time("Next time", nextTime).Msg("Next trigger time calculated")
 		select {
 		case <-timer.C:
 			go func() {

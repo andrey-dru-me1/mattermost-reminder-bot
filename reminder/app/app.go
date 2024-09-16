@@ -10,6 +10,7 @@ import (
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/models"
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/repositories"
 	"github.com/go-sql-driver/mysql"
+	"github.com/rs/zerolog"
 )
 
 type TriggeredReminder struct {
@@ -19,6 +20,7 @@ type TriggeredReminder struct {
 
 type Application struct {
 	Db              *sql.DB
+	Logger          zerolog.Logger
 	RemindManager   rman.RemindManager
 	DefaultLocation *time.Location
 }
@@ -34,7 +36,14 @@ func SetupApplication() (*Application, error) {
 		loc = time.UTC
 	}
 
-	rman := rman.New(db, loc)
+	logger := zerolog.New(
+		zerolog.ConsoleWriter{
+			Out:        os.Stdout,
+			TimeFormat: time.RFC822,
+		},
+	).With().Timestamp().Logger()
+
+	rman := rman.New(db, loc, logger)
 	err = setupRemindGenerator(db, rman)
 	if err != nil {
 		return nil, err
@@ -44,6 +53,7 @@ func SetupApplication() (*Application, error) {
 		Db:              db,
 		RemindManager:   rman,
 		DefaultLocation: loc,
+		Logger:          logger,
 	}, nil
 }
 
