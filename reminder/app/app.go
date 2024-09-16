@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/internal/rman"
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/models"
@@ -17,8 +18,9 @@ type TriggeredReminder struct {
 }
 
 type Application struct {
-	Db            *sql.DB
-	RemindManager rman.RemindManager
+	Db              *sql.DB
+	RemindManager   rman.RemindManager
+	DefaultLocation *time.Location
 }
 
 func SetupApplication() (*Application, error) {
@@ -27,15 +29,21 @@ func SetupApplication() (*Application, error) {
 		return nil, err
 	}
 
-	rman := rman.New(db)
+	loc, err := time.LoadLocation(os.Getenv("DEFAULT_TZ"))
+	if err != nil {
+		loc = time.UTC
+	}
+
+	rman := rman.New(db, loc)
 	err = setupRemindGenerator(db, rman)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Application{
-		Db:            db,
-		RemindManager: rman,
+		Db:              db,
+		RemindManager:   rman,
+		DefaultLocation: loc,
 	}, nil
 }
 

@@ -21,18 +21,21 @@ type RemindManager interface {
 }
 
 type defaultRemindManager struct {
-	cancels   *syncmap.Map[int, chan bool]
-	completes *syncmap.Map[int, chan bool]
-	reminds   *syncmap.Map[int, models.Reminder]
-	db        *sql.DB
+	cancels         *syncmap.Map[int, chan<- bool]
+	completes       *syncmap.Map[int, chan<- bool]
+	reminds         *syncmap.Map[int, models.Reminder]
+	defaultLocation *time.Location
+	db              *sql.DB
 }
 
-func New(db *sql.DB) RemindManager {
+func New(db *sql.DB, defaultLocation *time.Location) RemindManager {
 	return &defaultRemindManager{
-		cancels:   syncmap.New[int, chan bool](),
-		completes: syncmap.New[int, chan bool](),
-		reminds:   syncmap.New[int, models.Reminder](),
-		db:        db}
+		cancels:         syncmap.New[int, chan<- bool](),
+		completes:       syncmap.New[int, chan<- bool](),
+		reminds:         syncmap.New[int, models.Reminder](),
+		db:              db,
+		defaultLocation: defaultLocation,
+	}
 }
 
 func (rm *defaultRemindManager) TriggerReminds(reminders ...models.Reminder) {
@@ -61,16 +64,31 @@ func (rm *defaultRemindManager) CompleteReminds(ids ...int) {
 
 func (rm *defaultRemindManager) AddReminders(reminders ...models.Reminder) {
 	for _, reminder := range reminders {
-		rm.cancels.Set(reminder.ID, make(chan bool))
-		rm.completes.Set(reminder.ID, make(chan bool))
-		go rm.generateReminds(reminder)
+		expr, err := cronexpr.Parse(reminder.Rule)
+		if err != nil {
+			log.Printf(
+				"Error while parsing cron expression '%s': %s\n", reminder.Rule, err,
+			)
+			continue
+		}
+
+		cancel := make(chan bool)
+		complete := make(chan bool)
+
+		rm.cancels.Set(reminder.ID, cancel)
+		rm.completes.Set(reminder.ID, complete)
+
+		go rm.generateReminds(reminder, expr, cancel, complete)
 	}
 }
 
 func (rm *defaultRemindManager) RemoveReminders(ids ...int) {
 	for _, id := range ids {
 		if cancel, ok := rm.cancels.Get(id); ok {
-			cancel <- true
+			select {
+			case cancel <- true:
+			default:
+			}
 			close(cancel)
 
 			if complete, ok := rm.completes.Get(id); ok {
@@ -88,30 +106,16 @@ func (rm *defaultRemindManager) RemoveReminders(ids ...int) {
 	}
 }
 
-func (rm *defaultRemindManager) generateReminds(reminder models.Reminder) {
-	expr, err := cronexpr.Parse(reminder.Rule)
-	if err != nil {
-		log.Printf(
-			"Error while parsing cron expression '%s': %s\n", reminder.Rule, err,
-		)
-		return
-	}
+func (rm *defaultRemindManager) generateReminds(
+	reminder models.Reminder,
+	expr *cronexpr.Expression,
+	cancel <-chan bool,
+	complete <-chan bool,
+) {
 	log.Printf("Reminder %d (%s) starts generating reminds\n", reminder.ID, reminder.Name)
 
-	cancel, ok := rm.cancels.Get(reminder.ID)
-	if !ok {
-		log.Printf("Cancel channel for a reminder with id %d was not created\n", reminder.ID)
-		return
-	}
-
-	complete, ok := rm.completes.Get(reminder.ID)
-	if !ok {
-		log.Printf("Cancel channel for a reminder with id %d was not created\n", reminder.ID)
-		return
-	}
-
 	for {
-		now := time.Now()
+		now := time.Now().In(rm.defaultLocation)
 		if channel, err := repositories.GetChannel(rm.db, reminder.Channel); err == nil {
 			if loc, err := time.LoadLocation(channel.TimeZone); err == nil {
 				now = now.In(loc)

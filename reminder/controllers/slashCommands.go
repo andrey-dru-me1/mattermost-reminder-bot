@@ -47,7 +47,7 @@ type mattermostRequest struct {
 
 func mattermostReminderCreate(c *gin.Context, app *app.Application, req mattermostRequest, tokens []string) {
 	if len(tokens) < 4 {
-		c.JSON(http.StatusOK, gin.H{"text": usage})
+		c.JSON(http.StatusOK, gin.H{"text": "Wrong argument count"})
 		return
 	}
 
@@ -112,7 +112,7 @@ func mattermostReminderList(c *gin.Context, app *app.Application, req mattermost
 
 func mattermostReminderDelete(c *gin.Context, app *app.Application, tokens []string) {
 	if len(tokens) < 2 {
-		c.JSON(http.StatusOK, gin.H{"text": usage})
+		c.JSON(http.StatusOK, gin.H{"text": "Wrong argument count"})
 		return
 	}
 	reminderIDString := tokens[1]
@@ -158,8 +158,9 @@ func mattermostReminderTimeZoneGet(c *gin.Context, app *app.Application, req mat
 			http.StatusOK,
 			gin.H{
 				"text": fmt.Sprintf(
-					"Time zone is not set for the channel '%s'. Used default time zone: UTC.\n",
+					"Time zone is not set for the channel '%s'. Used default time zone: %v.\n",
 					req.ChannelName,
+					app.DefaultLocation,
 				),
 			},
 		)
