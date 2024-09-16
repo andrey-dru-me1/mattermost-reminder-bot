@@ -14,7 +14,7 @@ type multiScanner interface {
 }
 
 func extractReminderFromRow(row multiScanner) (*models.Reminder, error) {
-	var id int
+	var id int64
 	var name, rule, channel, message, createdAtString, modifiedAtString string
 
 	if err := row.Scan(

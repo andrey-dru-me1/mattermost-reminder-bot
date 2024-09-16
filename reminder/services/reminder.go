@@ -1,21 +1,28 @@
 package services
 
 import (
+	"fmt"
+
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/app"
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/dtos"
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/models"
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/repositories"
+	"github.com/gorhill/cronexpr"
 )
 
 func CreateReminder(app *app.Application, reminderDTO dtos.ReminderDTO) (int64, error) {
+	if _, err := cronexpr.Parse(reminderDTO.Rule); err != nil {
+		return 0, fmt.Errorf("parse cron expr: %w", err)
+	}
+
 	id, err := repositories.CreateReminder(app.Db, reminderDTO)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("create reminder: %w", err)
 	}
 
 	reminder, err := repositories.GetReminder(app.Db, id)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("get created reminder: %w", err)
 	}
 
 	app.RemindManager.AddReminders(*reminder)
@@ -28,7 +35,7 @@ func UpdateReminder(app *app.Application, reminderID int64, reminderDTO dtos.Rem
 }
 
 func DeleteReminder(app *app.Application, reminderID int64) error {
-	app.RemindManager.RemoveReminders(int(reminderID))
+	app.RemindManager.RemoveReminders(reminderID)
 	return repositories.DeleteReminder(app.Db, reminderID)
 }
 

@@ -3,7 +3,7 @@ package models
 import "time"
 
 type Reminder struct {
-	ID         int       `json:"id"`
+	ID         int64     `json:"id"`
 	Name       string    `json:"name"`
 	Rule       string    `json:"rule"`
 	Channel    string    `json:"channel"`

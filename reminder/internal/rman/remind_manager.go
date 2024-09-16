@@ -15,24 +15,24 @@ import (
 type RemindManager interface {
 	TriggerReminds(reminders ...models.Reminder)
 	GetReminds() []models.Reminder
-	CompleteReminds(ids ...int)
+	CompleteReminds(ids ...int64)
 	AddReminders(reminders ...models.Reminder)
-	RemoveReminders(ids ...int)
+	RemoveReminders(ids ...int64)
 }
 
 type defaultRemindManager struct {
-	cancels         *syncmap.Map[int, chan<- bool]
-	completes       *syncmap.Map[int, chan<- bool]
-	reminds         *syncmap.Map[int, models.Reminder]
+	cancels         *syncmap.Map[int64, chan<- bool]
+	completes       *syncmap.Map[int64, chan<- bool]
+	reminds         *syncmap.Map[int64, models.Reminder]
 	defaultLocation *time.Location
 	db              *sql.DB
 }
 
 func New(db *sql.DB, defaultLocation *time.Location) RemindManager {
 	return &defaultRemindManager{
-		cancels:         syncmap.New[int, chan<- bool](),
-		completes:       syncmap.New[int, chan<- bool](),
-		reminds:         syncmap.New[int, models.Reminder](),
+		cancels:         syncmap.New[int64, chan<- bool](),
+		completes:       syncmap.New[int64, chan<- bool](),
+		reminds:         syncmap.New[int64, models.Reminder](),
 		db:              db,
 		defaultLocation: defaultLocation,
 	}
@@ -46,14 +46,14 @@ func (rm *defaultRemindManager) TriggerReminds(reminders ...models.Reminder) {
 
 func (rm *defaultRemindManager) GetReminds() []models.Reminder {
 	var reminders []models.Reminder
-	rm.reminds.Range(func(key int, value models.Reminder) bool {
+	rm.reminds.Range(func(key int64, value models.Reminder) bool {
 		reminders = append(reminders, value)
 		return true
 	})
 	return reminders
 }
 
-func (rm *defaultRemindManager) CompleteReminds(ids ...int) {
+func (rm *defaultRemindManager) CompleteReminds(ids ...int64) {
 	for _, id := range ids {
 		if complete, ok := rm.completes.Get(id); ok {
 			complete <- true
@@ -82,7 +82,7 @@ func (rm *defaultRemindManager) AddReminders(reminders ...models.Reminder) {
 	}
 }
 
-func (rm *defaultRemindManager) RemoveReminders(ids ...int) {
+func (rm *defaultRemindManager) RemoveReminders(ids ...int64) {
 	for _, id := range ids {
 		if cancel, ok := rm.cancels.Get(id); ok {
 			select {
@@ -132,6 +132,12 @@ func (rm *defaultRemindManager) generateReminds(
 		}
 
 		nextTime := expr.Next(now).UTC()
+		if nextTime.IsZero() {
+			rm.RemoveReminders(reminder.ID)
+			repositories.DeleteReminder(rm.db, reminder.ID)
+			return
+		}
+
 		timer := time.NewTimer(time.Until(nextTime))
 		log.Printf("Next trigger time for reminder '%s' is: %v\n", reminder.Name, nextTime)
 		select {

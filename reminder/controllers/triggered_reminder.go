@@ -17,7 +17,7 @@ func GetTriggeredReminders(c *gin.Context) {
 func CompleteReminds(c *gin.Context) {
 	app := c.MustGet("app").(*app.Application)
 
-	var ids []int
+	var ids []int64
 	if err := c.BindJSON(&ids); err != nil {
 		c.JSON(
 			http.StatusBadRequest,
