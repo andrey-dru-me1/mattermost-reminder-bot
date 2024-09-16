@@ -17,13 +17,26 @@ import (
 )
 
 const usage = `Usage: /reminder COMMAND OPTIONS
-  commands:
-  - add, create NAME CRON-RULE MESSAGE - creates new reminder
-  - list, ls - lists all reminders
-  - delete, del, remove, rm ID - deletes a reminder with ID identifier
-  - timezone, tz LOCATION - updates channel timezone
+Commands:
+- add, create NAME CRON-RULE MESSAGE - creates new reminder
+- list, ls - lists all reminders
+- delete, del, remove, rm ID - deletes a reminder with ID identifier
+- timezone, tz LOCATION - updates channel timezone
+- timezone, tz - shows current location
 
-CRON-RULE: "Seconds Minutes Hours DayOfMonth Month DayOfWeek Year"
+CRON-RULE:
+- "Seconds Minutes Hours DayOfMonth Month DayOfWeek Year"
+- "Minutes Hours DayOfMonth Month DayOfWeek Year" (Seconds default to 0)
+- "Minutes Hours DayOfMonth Month DayOfWeek" (Year defaults to *)
+- Month: 1-12 or JAN-DEC
+- DayOfWeek 0-6 or SUN-SAT
+- ` + "`*`" + ` - any value ("0 12 * * *" - 12:00 every day every month every year)
+- ` + "`/`" + ` - time period ("*/5 * * * *" - every 5 minute of every day every month every year)
+- ` + "`,`" + ` - list separator ("0 12 10,25 * *" - 12:00 every 10th and 25th day of every month)
+- ` + "`-`" + ` - range ("0 12 * MON-FRI *" - 12:00 every workday)
+- ` + "`L`" + ` - last ("0 12 * 5L *" - 12:00 last friday every month)
+- ` + "`#`" + ` - numbered ("0 12 * TUE#2 *" - 12:00 second tuesday of every month)
+LOCATION: TZ identifier (for example "Asia/Novosibirsk")
 `
 
 type mattermostRequest struct {
@@ -119,11 +132,7 @@ func mattermostReminderDelete(c *gin.Context, app *app.Application, tokens []str
 	c.JSON(http.StatusOK, gin.H{"text": "Reminder successfully deleted"})
 }
 
-func mattermostReminderTimeZone(c *gin.Context, app *app.Application, req mattermostRequest, tokens []string) {
-	if len(tokens) < 2 {
-		c.JSON(http.StatusOK, gin.H{"text": usage})
-		return
-	}
+func mattermostReminderTimeZoneSet(c *gin.Context, app *app.Application, req mattermostRequest, tokens []string) {
 	timeZone := tokens[1]
 	if _, err := time.LoadLocation(timeZone); err != nil {
 		c.JSON(http.StatusOK, gin.H{"text": fmt.Sprintf("Error parsing timezone: %s", err)})
@@ -140,6 +149,34 @@ func mattermostReminderTimeZone(c *gin.Context, app *app.Application, req matter
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"text": "Timezone set"})
+}
+
+func mattermostReminderTimeZoneGet(c *gin.Context, app *app.Application, req mattermostRequest) {
+	channel, err := services.GetChannel(app, req.ChannelName)
+	if err != nil {
+		c.JSON(
+			http.StatusOK,
+			gin.H{
+				"text": fmt.Sprintf(
+					"Time zone is not set for the channel '%s'. Used default time zone: UTC.\n",
+					req.ChannelName,
+				),
+			},
+		)
+		return
+	}
+	c.JSON(
+		http.StatusOK,
+		gin.H{"text": fmt.Sprintf("Time zone: %s", channel.TimeZone)},
+	)
+}
+
+func mattermostReminderTimeZone(c *gin.Context, app *app.Application, req mattermostRequest, tokens []string) {
+	if len(tokens) <= 1 {
+		mattermostReminderTimeZoneGet(c, app, req)
+	} else {
+		mattermostReminderTimeZoneSet(c, app, req, tokens)
+	}
 }
 
 func MattermostReminder(c *gin.Context) {
