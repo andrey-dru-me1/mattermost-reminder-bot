@@ -18,30 +18,16 @@ services:
       retries: 5
       start_period: 30s
   reminder:
-    image: golang
+    build: ./reminder
     env_file:
       - ./.env
-    volumes:
-      - ./reminder:/root
-    working_dir: /root
-    command: [ "go", "run", "." ]
-    healthcheck:
-      test: [ "CMD", "curl", "localhost:8080/healthcheck" ]
-      interval: 10m
-      timeout: 10s
-      retries: 5
-      start_period: 30s
     depends_on:
       db:
         condition: service_healthy
   poller:
-    image: golang
+    build: ./poller
     env_file:
       - .env
-    volumes:
-      - ./poller:/root
-    working_dir: /root
-    command: [ "go", "run", "." ]
     depends_on:
       reminder:
         condition: service_healthy
