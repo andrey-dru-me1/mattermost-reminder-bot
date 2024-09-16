@@ -20,7 +20,7 @@ const usage = `Usage: /reminder COMMAND OPTIONS
 Commands:
 - add, create NAME CRON-RULE MESSAGE - creates new reminder
 - list, ls - lists all reminders
-- delete, del, remove, rm ID - deletes a reminder with ID identifier
+- delete, del, remove, rm ID... - deletes a reminder with ID identifier
 - timezone, tz LOCATION - updates channel timezone
 - timezone, tz - shows current location
 
@@ -115,21 +115,50 @@ func mattermostReminderDelete(c *gin.Context, app *app.Application, tokens []str
 		c.JSON(http.StatusOK, gin.H{"text": "Wrong argument count"})
 		return
 	}
-	reminderIDString := tokens[1]
-	reminderID, err := strconv.ParseInt(reminderIDString, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"text": usage})
-		return
+
+	type undeleted struct {
+		id  int64
+		err error
 	}
 
-	if err := services.DeleteReminder(app, reminderID); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"text": fmt.Sprintf("Error removing reminder %d: %s", reminderID, err.Error()),
-		})
-		return
+	var deleted []int64
+	var undels []undeleted
+
+	for _, reminderIDString := range tokens[1:] {
+		id, err := strconv.ParseInt(reminderIDString, 10, 64)
+		if err != nil {
+			undels = append(
+				undels,
+				undeleted{id: id, err: fmt.Errorf("parse id: %w", err)},
+			)
+			continue
+		}
+
+		if err := services.DeleteReminder(app, id); err != nil {
+			undels = append(
+				undels,
+				undeleted{id: id, err: fmt.Errorf("delete reminder from database: %w", err)},
+			)
+			continue
+		}
+
+		deleted = append(deleted, id)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"text": "Reminder successfully deleted"})
+	var sb strings.Builder
+	for _, undel := range undels {
+		sb.WriteString(fmt.Sprintf("Error deleting %d reminder: %s\n", undel.id, undel.err))
+	}
+	sb.WriteString("\nSuccessfully deleted: ")
+	for i, del := range deleted {
+		if i != 0 {
+			sb.WriteString(", ")
+		}
+		sb.WriteString(fmt.Sprintf("%d", del))
+	}
+	sb.WriteString("\n")
+
+	c.JSON(http.StatusOK, gin.H{"text": sb.String()})
 }
 
 func mattermostReminderTimeZoneSet(c *gin.Context, app *app.Application, req mattermostRequest, tokens []string) {
