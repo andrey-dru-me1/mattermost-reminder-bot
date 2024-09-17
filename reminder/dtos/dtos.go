@@ -6,3 +6,9 @@ type ReminderDTO struct {
 	Channel string `json:"channel"`
 	Message string `json:"message"`
 }
+
+type MMRequest struct {
+	ChannelName string `form:"channel_name"`
+	Command     string `form:"command"`
+	Text        string `form:"text"`
+}
