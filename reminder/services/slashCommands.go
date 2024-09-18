@@ -11,7 +11,16 @@ import (
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/models"
 )
 
-func MMReminderCreate(app *app.Application, req dtos.MMRequest, tokens []string) error {
+type undeleted struct {
+	id  int64
+	err error
+}
+
+func MMReminderCreate(
+	app *app.Application,
+	req dtos.MMRequest,
+	tokens []string,
+) error {
 	if len(tokens) < 4 {
 		return fmt.Errorf("wrong argument count")
 	}
@@ -57,19 +66,11 @@ func MMReminderList(app *app.Application, req dtos.MMRequest) (string, error) {
 	return "There are no reminders in this channel yet! Add a new one using `/reminder add ...`", nil
 }
 
-func MMReminderDelete(app *app.Application, tokens []string) (string, error) {
-	if len(tokens) < 2 {
-		return "", fmt.Errorf("wrong argument count")
-	}
-
-	type undeleted struct {
-		id  int64
-		err error
-	}
-
-	var deleted []int64
-	var undels []undeleted
-
+func deleteRemindersAndCollect(
+	app *app.Application,
+	req dtos.MMRequest,
+	tokens []string,
+) (deleted []int64, undels []undeleted) {
 	for _, reminderIDString := range tokens[1:] {
 		id, err := strconv.ParseInt(reminderIDString, 10, 64)
 		if err != nil {
@@ -80,34 +81,91 @@ func MMReminderDelete(app *app.Application, tokens []string) (string, error) {
 			continue
 		}
 
+		reminder, err := GetReminder(app, id)
+		if err != nil {
+			undels = append(
+				undels,
+				undeleted{id: id, err: fmt.Errorf("get reminder: %w", err)},
+			)
+			continue
+		}
+		if !strings.EqualFold(reminder.Name, req.ChannelName) {
+			undels = append(
+				undels,
+				undeleted{
+					id: id,
+					err: fmt.Errorf(
+						"get reminder: invalid access: reminder %d belongs to channel "+
+							"'%s' and cannot be deleted from channel '%s'",
+						id,
+						reminder.Channel,
+						req.ChannelName,
+					),
+				},
+			)
+			continue
+		}
+
 		if err := DeleteReminder(app, id); err != nil {
 			undels = append(
 				undels,
-				undeleted{id: id, err: fmt.Errorf("delete reminder from database: %w", err)},
+				undeleted{
+					id:  id,
+					err: fmt.Errorf("delete reminder from database: %w", err),
+				},
 			)
 			continue
 		}
 
 		deleted = append(deleted, id)
 	}
-
-	var sb strings.Builder
-	for _, undel := range undels {
-		sb.WriteString(fmt.Sprintf("Error deleting %d reminder: %s\n", undel.id, undel.err))
-	}
-	sb.WriteString("\nSuccessfully deleted: ")
-	for i, del := range deleted {
-		if i != 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString(fmt.Sprintf("%d", del))
-	}
-	sb.WriteString("\n")
-
-	return sb.String(), nil
+	return
 }
 
-func MMReminderTimeZoneSet(app *app.Application, req dtos.MMRequest, tokens []string) (string, error) {
+func constructMessage(deleted []int64, undels []undeleted) string {
+	var sb strings.Builder
+	for _, undel := range undels {
+		sb.WriteString(
+			fmt.Sprintf(
+				"Error deleting %d reminder: %s\n",
+				undel.id,
+				undel.err,
+			),
+		)
+	}
+	if len(deleted) > 0 {
+		sb.WriteString("\nSuccessfully deleted: ")
+		for i, del := range deleted {
+			if i != 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(fmt.Sprintf("%d", del))
+		}
+		sb.WriteString("\n")
+	}
+
+	return sb.String()
+}
+
+func MMReminderDelete(
+	app *app.Application,
+	req dtos.MMRequest,
+	tokens []string,
+) (string, error) {
+	if len(tokens) < 2 {
+		return "", fmt.Errorf("wrong argument count")
+	}
+
+	deleted, undels := deleteRemindersAndCollect(app, req, tokens)
+
+	return constructMessage(deleted, undels), nil
+}
+
+func MMReminderTimeZoneSet(
+	app *app.Application,
+	req dtos.MMRequest,
+	tokens []string,
+) (string, error) {
 	timeZone := tokens[1]
 	if _, err := time.LoadLocation(timeZone); err != nil {
 		return "", fmt.Errorf("parse timezone: %w", err)

@@ -37,54 +37,30 @@ CRON-RULE:
 LOCATION: TZ identifier (for example "Asia/Novosibirsk")
 `
 
-func mmReminderCreate(c *gin.Context, app *app.Application, req dtos.MMRequest, tokens []string) {
+func mmReminderCreate(
+	app *app.Application,
+	req dtos.MMRequest,
+	tokens []string,
+) (string, error) {
 	if err := services.MMReminderCreate(app, req, tokens); err != nil {
-		txt := err.Error()
-		c.JSON(http.StatusOK, gin.H{"text": strings.ToUpper(txt[:1]) + txt[1:]})
-	} else {
-		c.JSON(
-			http.StatusOK,
-			gin.H{"text": "Reminder successfully created"},
-		)
+		return "", err
 	}
+	return "Reminder created successfully", nil
 }
 
-func mmReminderList(c *gin.Context, app *app.Application, req dtos.MMRequest) {
-	if str, err := services.MMReminderList(app, req); err != nil {
-		c.JSON(
-			http.StatusOK,
-			gin.H{"text": fmt.Sprintf("Error: %s", err)},
-		)
-	} else {
-		c.JSON(
-			http.StatusOK,
-			gin.H{"text": str},
-		)
-	}
-}
-
-func mmReminderDelete(c *gin.Context, app *app.Application, tokens []string) {
-	if str, err := services.MMReminderDelete(app, tokens); err != nil {
-		txt := err.Error()
-		c.JSON(http.StatusOK, gin.H{"text": strings.ToUpper(txt[:1]) + txt[1:]})
-	} else {
-		c.JSON(http.StatusOK, gin.H{"text": str})
-	}
-}
-
-func mmReminderTimeZone(c *gin.Context, app *app.Application, req dtos.MMRequest, tokens []string) {
+func mmReminderTimeZone(
+	app *app.Application,
+	req dtos.MMRequest,
+	tokens []string,
+) (string, error) {
 	if len(tokens) <= 1 {
-		c.JSON(
-			http.StatusOK,
-			gin.H{"text": services.MMReminderTimeZoneGet(app, req)},
-		)
-	} else {
-		if str, err := services.MMReminderTimeZoneSet(app, req, tokens); err != nil {
-			c.JSON(http.StatusOK, gin.H{"text": fmt.Sprintf("Error: %s", err)})
-		} else {
-			c.JSON(http.StatusOK, gin.H{"text": fmt.Sprintf("Time zone set to %s", str)})
-		}
+		return services.MMReminderTimeZoneGet(app, req), nil
 	}
+	str, err := services.MMReminderTimeZoneSet(app, req, tokens)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("Time zone set to %s", str), nil
 }
 
 func authorize(c *gin.Context) error {
@@ -101,6 +77,33 @@ func authorize(c *gin.Context) error {
 		return err
 	}
 	return nil
+}
+
+func processCommands(
+	app *app.Application,
+	req dtos.MMRequest,
+	tokens []string,
+) (string, bool) {
+	if len(tokens) > 0 && strings.EqualFold(req.Command, "/reminder") {
+		var str string
+		var err error
+		switch tokens[0] {
+		case "add", "create":
+			str, err = mmReminderCreate(app, req, tokens)
+		case "list", "ls":
+			str, err = services.MMReminderList(app, req)
+		case "delete", "del", "remove", "rm":
+			str, err = services.MMReminderDelete(app, req, tokens)
+		case "timezone", "tz":
+			str, err = mmReminderTimeZone(app, req, tokens)
+		}
+		if err != nil {
+			return fmt.Sprintf("Error: %s", err), true
+		} else if str != "" {
+			return str, true
+		}
+	}
+	return "", false
 }
 
 func MattermostReminder(c *gin.Context) {
@@ -129,26 +132,11 @@ func MattermostReminder(c *gin.Context) {
 
 	tokens := tokenize(req.Text)
 
-	if len(tokens) > 0 && strings.EqualFold(req.Command, "/reminder") {
-		switch tokens[0] {
-		case "add", "create":
-			mmReminderCreate(c, app, req, tokens)
-			return
-		case "list", "ls":
-			mmReminderList(c, app, req)
-			return
-		case "delete", "del", "remove", "rm":
-			mmReminderDelete(c, app, tokens)
-			return
-		case "timezone", "tz":
-			mmReminderTimeZone(c, app, req, tokens)
-			return
-		}
+	if str, ok := processCommands(app, req, tokens); ok {
+		c.JSON(http.StatusOK, gin.H{"text": str})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"text": usage})
 	}
-	c.JSON(
-		http.StatusOK,
-		gin.H{"text": usage},
-	)
 }
 
 func tokenize(str string) []string {
