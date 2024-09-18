@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	_ "time/tzdata"
@@ -84,7 +85,31 @@ func mmReminderTimeZone(c *gin.Context, app *app.Application, req dtos.MMRequest
 	}
 }
 
+func authorize(c *gin.Context) error {
+	err := fmt.Errorf("invalid token")
+
+	authFull := c.Request.Header.Get("Authorization")
+	tokens := strings.Split(authFull, " ")
+	if len(tokens) != 2 {
+		return err
+	}
+
+	auth := tokens[1]
+	if !strings.EqualFold(auth, os.Getenv("MM_SC_TOKEN")) {
+		return err
+	}
+	return nil
+}
+
 func MattermostReminder(c *gin.Context) {
+	if err := authorize(c); err != nil {
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": fmt.Sprintf("Authorization error: %s", err)},
+		)
+		return
+	}
+
 	var req dtos.MMRequest
 	if err := c.Bind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
