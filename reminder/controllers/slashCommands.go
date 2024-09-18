@@ -39,7 +39,8 @@ LOCATION: TZ identifier (for example "Asia/Novosibirsk")
 
 func mmReminderCreate(c *gin.Context, app *app.Application, req dtos.MMRequest, tokens []string) {
 	if err := services.MMReminderCreate(app, req, tokens); err != nil {
-		c.JSON(http.StatusOK, gin.H{"text": strings.ToUpper(err.Error())})
+		txt := err.Error()
+		c.JSON(http.StatusOK, gin.H{"text": strings.ToUpper(txt[:1]) + txt[1:]})
 	} else {
 		c.JSON(
 			http.StatusOK,
@@ -64,7 +65,8 @@ func mmReminderList(c *gin.Context, app *app.Application, req dtos.MMRequest) {
 
 func mmReminderDelete(c *gin.Context, app *app.Application, tokens []string) {
 	if str, err := services.MMReminderDelete(app, tokens); err != nil {
-		c.JSON(http.StatusOK, gin.H{"text": strings.ToUpper(err.Error())})
+		txt := err.Error()
+		c.JSON(http.StatusOK, gin.H{"text": strings.ToUpper(txt[:1]) + txt[1:]})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"text": str})
 	}
