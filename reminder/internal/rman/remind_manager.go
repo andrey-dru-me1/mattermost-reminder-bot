@@ -3,7 +3,6 @@ package rman
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/internal/syncmap"
@@ -30,7 +29,11 @@ type defaultRemindManager struct {
 	db              *sql.DB
 }
 
-func New(db *sql.DB, defaultLocation *time.Location, logger zerolog.Logger) RemindManager {
+func New(
+	db *sql.DB,
+	defaultLocation *time.Location,
+	logger zerolog.Logger,
+) RemindManager {
 	return &defaultRemindManager{
 		cancels:         syncmap.New[int64, chan<- bool](),
 		completes:       syncmap.New[int64, chan<- bool](),
@@ -69,9 +72,9 @@ func (rm *defaultRemindManager) AddReminders(reminders ...models.Reminder) {
 	for _, reminder := range reminders {
 		expr, err := cronexpr.Parse(reminder.Rule)
 		if err != nil {
-			log.Printf(
-				"Error while parsing cron expression '%s': %s\n", reminder.Rule, err,
-			)
+			rm.logger.Err(err).
+				Str("rule", reminder.Rule).
+				Msg("Cannot parse cron expression")
 			continue
 		}
 
@@ -115,7 +118,9 @@ func (rm *defaultRemindManager) generateReminds(
 	cancel <-chan bool,
 	complete <-chan bool,
 ) {
-	rm.logger.Info().Str("Reminder", fmt.Sprintf("%v", reminder)).Msg("Starts generating reminds")
+	rm.logger.Info().
+		Str("Reminder", fmt.Sprintf("%v", reminder)).
+		Msg("Starts generating reminds")
 
 	for {
 		now := time.Now().In(rm.defaultLocation)
@@ -137,7 +142,10 @@ func (rm *defaultRemindManager) generateReminds(
 		}
 
 		timer := time.NewTimer(time.Until(nextTime))
-		rm.logger.Info().Any("Reminder", reminder).Time("Next time", nextTime).Msg("Next trigger time calculated")
+		rm.logger.Info().
+			Any("Reminder", reminder).
+			Time("Next time", nextTime).
+			Msg("Next trigger time calculated")
 		select {
 		case <-timer.C:
 			go func() {
