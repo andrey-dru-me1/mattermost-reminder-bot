@@ -89,7 +89,7 @@ func deleteRemindersAndCollect(
 			)
 			continue
 		}
-		if !strings.EqualFold(reminder.Name, req.ChannelName) {
+		if !strings.EqualFold(reminder.Channel, req.ChannelName) {
 			undels = append(
 				undels,
 				undeleted{
