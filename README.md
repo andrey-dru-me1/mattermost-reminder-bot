@@ -1,5 +1,22 @@
 # Mattermost Bot Reminder
 
+## Table of contents
+
+- [Mattermost Bot Reminder](#mattermost-bot-reminder)
+  - [Table of contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+    - [Test](#test)
+    - [Production](#production)
+      - [Dockerhub](#dockerhub)
+      - [Build from source](#build-from-source)
+  - [Usage](#usage)
+    - [Examples](#examples)
+  - [Configuration](#configuration)
+    - [Env variables](#env-variables)
+    - [Container description](#container-description)
+  - [Migrations](#migrations)
+
 ## Prerequisites
 
 - go
