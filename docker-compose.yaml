@@ -1,9 +1,9 @@
 services:
   db:
-    image: mysql
+    image: mysql:9.0.1
     restart: always
     ports:
-      - ${DB_PORT}:3306
+      - 3306:3306
     env_file:
       - ./.env
     environment:
@@ -18,7 +18,7 @@ services:
       retries: 5
       start_period: 30s
   reminder:
-    image: golang
+    image: golang:1.23.1
     env_file:
       - ./.env
     volumes:
@@ -35,7 +35,7 @@ services:
       db:
         condition: service_healthy
   poller:
-    image: golang
+    image: golang:1.23.1
     env_file:
       - .env
     volumes:
@@ -48,7 +48,7 @@ services:
   test_mm:
     profiles:
       - test
-    image: mattermost/mattermost-preview
+    image: mattermost/mattermost-preview:10.0.0
     container_name: test_mm
     ports:
       - "8065:8065"
