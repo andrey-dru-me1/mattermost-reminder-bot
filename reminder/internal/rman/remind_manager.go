@@ -131,7 +131,7 @@ func (rm *defaultRemindManager) generateReminds(
 				rm.logger.Error().Err(err).Str("Location", loc.String()).Any("Channel", channel).Msg("Cannot parse location")
 			}
 		} else {
-			rm.logger.Error().Err(err).Any("Channel", reminder.Channel).Msg("Channel ot found in db")
+			rm.logger.Error().Err(err).Any("Channel", reminder.Channel).Msg("Channel not found in db")
 		}
 
 		nextTime := expr.Next(now).UTC()

@@ -16,7 +16,7 @@ import (
 
 const usage = `Usage: /reminder COMMAND OPTIONS
 Commands:
-- add, create NAME CRON-RULE MESSAGE - creates new reminder
+- add, create NAME CRON_RULE MESSAGE - creates new reminder
 - list, ls - lists all reminders
 - delete, del, remove, rm ID... - deletes a reminders with ID... identifiers
 - timezone, tz LOCATION - updates channel timezone
@@ -27,7 +27,7 @@ CRON-RULE:
 - "Minutes Hours DayOfMonth Month DayOfWeek Year" (Seconds default to 0)
 - "Minutes Hours DayOfMonth Month DayOfWeek" (Year defaults to *)
 - Month: 1-12 or JAN-DEC
-- DayOfWeek 0-6 or SUN-SAT
+- DayOfWeek 0-7 or SUN-SAT (both 0 and 7 stand for SUN)
 - ` + "`*`" + ` - any value ("0 12 * * *" - 12:00 every day every month every year)
 - ` + "`/`" + ` - time period ("*/5 * * * *" - every 5 minute of every day every month every year)
 - ` + "`,`" + ` - list separator ("0 12 10,25 * *" - 12:00 every 10th and 25th day of every month)
