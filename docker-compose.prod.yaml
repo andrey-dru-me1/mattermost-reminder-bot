@@ -28,6 +28,8 @@ services:
     build: ./poller
     env_file:
       - .env
+    environment:
+      POLL_PERIOD: 1m
     depends_on:
       reminder:
         condition: service_healthy

@@ -38,6 +38,8 @@ services:
     image: golang:1.23.1
     env_file:
       - .env
+    environment:
+      POLL_PERIOD: 1m
     volumes:
       - ./poller:/root
     working_dir: /root
