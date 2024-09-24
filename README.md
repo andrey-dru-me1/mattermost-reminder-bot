@@ -143,6 +143,7 @@ Database: MySQL
    7. `DEFAULT_TZ`
 3. `poller` simple service that periodically polls the `reminder` container for reminds and sends them to a corresponding mattermost channel using webhook
    1. `MM_IN_HOOK` - to send messages once reminders trigger
+   2. `POLL_PERIOD` - a time period for `poller` service to poll `reminder` service
 4. `test_mm` test profile - container that holds a test local mattermost server
 
 ## Migrations
