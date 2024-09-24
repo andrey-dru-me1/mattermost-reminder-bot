@@ -45,7 +45,7 @@ func mmReminderCreate(
 	if err := services.MMReminderCreate(app, req, tokens); err != nil {
 		return "", err
 	}
-	return "Reminder created successfully", nil
+	return "Reminder successfully created", nil
 }
 
 func mmReminderTimeZone(

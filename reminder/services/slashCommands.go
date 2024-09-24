@@ -184,7 +184,7 @@ func MMReminderTimeZoneGet(app *app.Application, req dtos.MMRequest) string {
 	channel, err := GetChannel(app, req.ChannelName)
 	if err != nil {
 		return fmt.Sprintf(
-			"Time zone is not set for the channel '%s'. Used default time zone: %v.\n",
+			"Time zone is not set for the channel '%s'. Using default time zone: %v.\n",
 			req.ChannelName,
 			app.DefaultLocation,
 		)
