@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 	_ "time/tzdata"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/dtos"
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/services"
 	"github.com/gin-gonic/gin"
+	"github.com/google/shlex"
 )
 
 const usage = `Usage: /reminder COMMAND OPTIONS
@@ -130,26 +130,17 @@ func MattermostReminder(c *gin.Context) {
 		return
 	}
 
-	tokens := tokenize(req.Text)
+	tokens, err := shlex.Split(req.Text)
+	if err != nil {
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": fmt.Sprintf("Error tokenizing request: %s", err)},
+		)
+	}
 
 	if str, ok := processCommands(app, req, tokens); ok {
 		c.JSON(http.StatusOK, gin.H{"text": str})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"text": usage})
 	}
-}
-
-func tokenize(str string) []string {
-	re := regexp.MustCompile(`'[^']*'|"[^"]*"|\S+`)
-	tokens := re.FindAllString(str, -1)
-
-	for i, token := range tokens {
-		tokLen := len(token)
-		if tokLen > 1 &&
-			((token[0] == '"' && token[tokLen-1] == '"') ||
-				(token[0] == '\'' && token[tokLen-1] == '\'')) {
-			tokens[i] = token[1 : tokLen-1]
-		}
-	}
-	return tokens
 }
