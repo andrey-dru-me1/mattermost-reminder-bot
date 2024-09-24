@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 type reminder struct {
@@ -22,11 +24,25 @@ type reminder struct {
 }
 
 func printRemind(reminder reminder) {
-	jsonStr := []byte(fmt.Sprintf(
-		`{"channel": "%s", "text": "%s"}`,
-		reminder.Channel,
-		reminder.Message,
-	))
+	const reqBody = "request body"
+
+	logger := log.With().Interface("reminder", reminder).Logger()
+
+	type remind struct {
+		Channel string `json:"channel"`
+		Message string `json:"text"`
+	}
+
+	rem := remind{
+		Channel: reminder.Channel,
+		Message: reminder.Message,
+	}
+
+	jsonStr, err := json.Marshal(rem)
+	if err != nil {
+		logger.Err(err).Msg("Error parsing json from reminder")
+		return
+	}
 
 	resp, err := http.Post(
 		os.Getenv("MM_IN_HOOK"),
@@ -34,11 +50,18 @@ func printRemind(reminder reminder) {
 		bytes.NewBuffer(jsonStr),
 	)
 	if err != nil {
-		log.Println(err)
+		logger.Err(err).
+			Bytes(reqBody, jsonStr).
+			Msg("Error sending message to a mattermost webhook")
 		return
 	}
 
-	log.Println("Response from mattermost server:", resp)
+	logger.Info().
+		Bytes(reqBody, jsonStr).
+		Interface("response header", resp.Header).
+		Interface("response body", resp.Body).
+		Msg("Got a response from mattermost")
+
 	if resp.StatusCode == http.StatusOK {
 		jsonStr := []byte(fmt.Sprintf(
 			`[%d]`,
@@ -50,11 +73,16 @@ func printRemind(reminder reminder) {
 			bytes.NewBuffer(jsonStr),
 		)
 		if err != nil {
-			log.Println(err)
+			logger.Err(err).
+				Bytes(reqBody, jsonStr).
+				Msg("Error marking remind completed")
 			return
 		}
 
-		log.Println("Response from complete reminds:", resp)
+		logger.Info().Bytes(reqBody, jsonStr).
+			Interface("response header", resp.Header).
+			Interface("response body", resp.Body).
+			Msg("Got a response from reminder service")
 	}
 }
 
@@ -75,6 +103,7 @@ func processReminders() error {
 	if err := json.Unmarshal(body, &reminders); err != nil {
 		return err
 	}
+	log.Info().Interface("reminders", reminders).Msg("Got reminders")
 
 	for _, reminder := range reminders {
 		go printRemind(reminder)
@@ -84,12 +113,28 @@ func processReminders() error {
 }
 
 func main() {
-	ticker := time.NewTicker(1 * time.Minute)
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
+	var ticker *time.Ticker
+
+	durationString := os.Getenv("POLL_PERIOD")
+	if duration, err := time.ParseDuration(durationString); err != nil {
+		log.Err(err).
+			Str("duration string", durationString).
+			Msg("Error parsing duration from ENV")
+		ticker = time.NewTicker(1 * time.Minute)
+	} else {
+		log.Info().
+			Str("duration string", durationString).
+			Str("duration", duration.String()).
+			Msg("Duration successfully parsed")
+		ticker = time.NewTicker(duration)
+	}
 
 	for {
-		<-ticker.C
 		if err := processReminders(); err != nil {
-			log.Println(err)
+			log.Err(err)
 		}
+		<-ticker.C
 	}
 }
