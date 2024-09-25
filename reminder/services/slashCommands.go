@@ -39,6 +39,15 @@ func MMReminderCreate(
 	return nil
 }
 
+func rmLineBreaks(s string) string {
+	pos := strings.Index(s, "\n")
+	if pos != -1 {
+		return s[:pos] + " ..."
+	} else {
+		return s
+	}
+}
+
 func MMReminderList(app *app.Application, req dtos.MMRequest) (string, error) {
 	reminders, err := GetRemindersByChannel(app, req.ChannelName)
 	if err != nil {
@@ -53,10 +62,10 @@ func MMReminderList(app *app.Application, req dtos.MMRequest) (string, error) {
 				fmt.Sprintf(
 					"|%d|%s|%s|%s|%s|\n",
 					reminder.ID,
-					reminder.Name,
+					rmLineBreaks(reminder.Name),
 					reminder.Channel,
 					reminder.Rule,
-					reminder.Message,
+					rmLineBreaks(reminder.Message),
 				),
 			)
 		}
