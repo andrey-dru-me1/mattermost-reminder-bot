@@ -9,50 +9,49 @@ import (
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/models"
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/repositories"
 	"github.com/gorhill/cronexpr"
-	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 type RemindManager interface {
-	TriggerReminds(reminders ...models.Reminder)
-	GetReminds() []models.Reminder
+	TriggerReminds(reminders ...models.Remind)
+	GetReminds() []models.Remind
 	CompleteReminds(ids ...int64)
 	AddReminders(reminders ...models.Reminder)
+	UpdateReminderOwner(id int64, owner string)
+	UpdateRemindWebhook(id int64, webhook string)
 	RemoveReminders(ids ...int64)
 }
 
 type defaultRemindManager struct {
 	cancels         *syncmap.Map[int64, chan<- bool]
 	completes       *syncmap.Map[int64, chan<- bool]
-	reminds         *syncmap.Map[int64, models.Reminder]
+	reminds         *syncmap.Map[int64, models.Remind]
 	defaultLocation *time.Location
-	logger          zerolog.Logger
 	db              *sql.DB
 }
 
 func New(
 	db *sql.DB,
 	defaultLocation *time.Location,
-	logger zerolog.Logger,
 ) RemindManager {
 	return &defaultRemindManager{
 		cancels:         syncmap.New[int64, chan<- bool](),
 		completes:       syncmap.New[int64, chan<- bool](),
-		reminds:         syncmap.New[int64, models.Reminder](),
+		reminds:         syncmap.New[int64, models.Remind](),
 		db:              db,
-		logger:          logger,
 		defaultLocation: defaultLocation,
 	}
 }
 
-func (rm *defaultRemindManager) TriggerReminds(reminders ...models.Reminder) {
-	for _, reminder := range reminders {
-		rm.reminds.Set(reminder.ID, reminder)
+func (rm *defaultRemindManager) TriggerReminds(reminds ...models.Remind) {
+	for _, remind := range reminds {
+		rm.reminds.Set(remind.ReminderId, remind)
 	}
 }
 
-func (rm *defaultRemindManager) GetReminds() []models.Reminder {
-	var reminders []models.Reminder
-	rm.reminds.Range(func(key int64, value models.Reminder) bool {
+func (rm *defaultRemindManager) GetReminds() []models.Remind {
+	var reminders []models.Remind
+	rm.reminds.Range(func(key int64, value models.Remind) bool {
 		reminders = append(reminders, value)
 		return true
 	})
@@ -72,7 +71,7 @@ func (rm *defaultRemindManager) AddReminders(reminders ...models.Reminder) {
 	for _, reminder := range reminders {
 		expr, err := cronexpr.Parse(reminder.Rule)
 		if err != nil {
-			rm.logger.Err(err).
+			log.Err(err).
 				Str("rule", reminder.Rule).
 				Msg("Cannot parse cron expression")
 			continue
@@ -112,13 +111,27 @@ func (rm *defaultRemindManager) RemoveReminders(ids ...int64) {
 	}
 }
 
+func (rm *defaultRemindManager) UpdateReminderOwner(id int64, owner string) {
+	rm.reminds.Apply(id, func(remind models.Remind) models.Remind {
+		remind.Owner = sql.NullString{String: owner, Valid: true}
+		return remind
+	})
+}
+
+func (rm *defaultRemindManager) UpdateRemindWebhook(id int64, webhook string) {
+	rm.reminds.Apply(id, func(remind models.Remind) models.Remind {
+		remind.Webhook = webhook
+		return remind
+	})
+}
+
 func (rm *defaultRemindManager) generateReminds(
 	reminder models.Reminder,
 	expr *cronexpr.Expression,
 	cancel <-chan bool,
 	complete <-chan bool,
 ) {
-	rm.logger.Info().
+	log.Info().
 		Str("Reminder", fmt.Sprintf("%v", reminder)).
 		Msg("Starts generating reminds")
 
@@ -128,10 +141,15 @@ func (rm *defaultRemindManager) generateReminds(
 			if loc, err := time.LoadLocation(channel.TimeZone); err == nil {
 				now = now.In(loc)
 			} else {
-				rm.logger.Error().Err(err).Str("Location", loc.String()).Any("Channel", channel).Msg("Cannot parse location")
+				log.Warn().
+					Err(err).
+					Str("Location", loc.String()).
+					Any("Channel", channel).
+					Interface("Default location", rm.defaultLocation).
+					Msg("Cannot parse location, using default TZ")
 			}
 		} else {
-			rm.logger.Error().Err(err).Any("Channel", reminder.Channel).Msg("Channel ot found in db")
+			log.Error().Err(err).Any("Channel", reminder.Channel).Msg("Channel not found in db")
 		}
 
 		nextTime := expr.Next(now).UTC()
@@ -142,18 +160,40 @@ func (rm *defaultRemindManager) generateReminds(
 		}
 
 		timer := time.NewTimer(time.Until(nextTime))
-		rm.logger.Info().
+		log.Info().
 			Any("Reminder", reminder).
 			Time("Next time", nextTime).
 			Msg("Next trigger time calculated")
 		select {
 		case <-timer.C:
 			go func() {
-				rm.reminds.Set(reminder.ID, reminder)
+				rm.reminds.Set(reminder.ID, rm.reminderToRemind(reminder))
 			}()
 			<-complete
 		case <-cancel:
 			return
 		}
 	}
+}
+
+func (rm *defaultRemindManager) reminderToRemind(
+	reminder models.Reminder,
+) models.Remind {
+	remind := models.Remind{
+		ReminderId: reminder.ID,
+		Owner:      reminder.Owner,
+		Name:       reminder.Name,
+		Rule:       reminder.Rule,
+		Channel:    reminder.Channel,
+		Message:    reminder.Message,
+	}
+
+	if reminder.Owner.Valid {
+		user, err := repositories.GetUser(rm.db, reminder.Owner.String)
+		if err == nil && user.Webhook.Valid {
+			remind.Webhook = user.Webhook.String
+		}
+	}
+
+	return remind
 }

@@ -11,7 +11,12 @@ import (
 
 func GetTriggeredReminders(c *gin.Context) {
 	app := c.MustGet("app").(*app.Application)
-	c.JSON(http.StatusOK, services.GetTriggeredReminders(app))
+	reminds := services.GetReminds(app)
+	if len(reminds) > 0 {
+		c.JSON(http.StatusOK, reminds)
+	} else {
+		c.JSON(http.StatusOK, [0]int{})
+	}
 }
 
 func CompleteReminds(c *gin.Context) {
@@ -21,7 +26,12 @@ func CompleteReminds(c *gin.Context) {
 	if err := c.BindJSON(&ids); err != nil {
 		c.JSON(
 			http.StatusBadRequest,
-			gin.H{"error": fmt.Sprintf("Request should consist of an id array: %s", err.Error())},
+			gin.H{
+				"error": fmt.Sprintf(
+					"Request should consist of an id array: %s",
+					err.Error(),
+				),
+			},
 		)
 		return
 	}

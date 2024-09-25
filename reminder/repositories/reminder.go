@@ -9,6 +9,8 @@ import (
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/models"
 )
 
+const reminderCols = "id, owner, name, rule, channel, message, created_at, modified_at"
+
 type multiScanner interface {
 	Scan(dest ...any) error
 }
@@ -16,9 +18,11 @@ type multiScanner interface {
 func extractReminderFromRow(row multiScanner) (*models.Reminder, error) {
 	var id int64
 	var name, rule, channel, message, createdAtString, modifiedAtString string
+	var owner sql.NullString
 
 	if err := row.Scan(
 		&id,
+		&owner,
 		&name,
 		&rule,
 		&channel,
@@ -40,6 +44,7 @@ func extractReminderFromRow(row multiScanner) (*models.Reminder, error) {
 
 	return &models.Reminder{
 		ID:         id,
+		Owner:      owner,
 		Name:       name,
 		Rule:       rule,
 		Channel:    channel,
@@ -51,7 +56,7 @@ func extractReminderFromRow(row multiScanner) (*models.Reminder, error) {
 
 func GetReminder(db *sql.DB, reminderID int64) (*models.Reminder, error) {
 	row := db.QueryRow(
-		`SELECT id, name, rule, channel, message, created_at, modified_at FROM reminders WHERE id = ?`,
+		"SELECT "+reminderCols+" FROM reminders WHERE id = ?",
 		reminderID,
 	)
 
@@ -64,33 +69,14 @@ func GetReminder(db *sql.DB, reminderID int64) (*models.Reminder, error) {
 }
 
 func GetReminders(db *sql.DB) ([]models.Reminder, error) {
-	rows, err := db.Query(`SELECT id, name, rule, channel, message, created_at, modified_at FROM reminders`)
-	if err != nil {
-		return nil, fmt.Errorf("execute query to extract data from reminders table: %w", err)
-	}
-	defer rows.Close()
-
-	var reminders []models.Reminder
-
-	for rows.Next() {
-		reminder, err := extractReminderFromRow(rows)
-		if err != nil {
-			return nil, fmt.Errorf("extract reminder from row: %w", err)
-		}
-
-		reminders = append(reminders, *reminder)
-	}
-
-	return reminders, nil
-}
-
-func GetRemindersByChannel(db *sql.DB, channel string) ([]models.Reminder, error) {
 	rows, err := db.Query(
-		`SELECT id, name, rule, channel, message, created_at, modified_at FROM reminders WHERE channel = ?`,
-		channel,
+		"SELECT " + reminderCols + " FROM reminders",
 	)
 	if err != nil {
-		return nil, fmt.Errorf("execute query to extract data from reminders table: %w", err)
+		return nil, fmt.Errorf(
+			"execute query to extract data from reminders table: %w",
+			err,
+		)
 	}
 	defer rows.Close()
 
@@ -108,26 +94,72 @@ func GetRemindersByChannel(db *sql.DB, channel string) ([]models.Reminder, error
 	return reminders, nil
 }
 
-func UpdateReminder(db *sql.DB, reminderID int64, req dtos.ReminderDTO) error {
+func GetRemindersBy(
+	db *sql.DB,
+	column string,
+	value string,
+) ([]models.Reminder, error) {
+	rows, err := db.Query(
+		fmt.Sprintf(
+			"SELECT %s FROM reminders WHERE %s = ?",
+			reminderCols,
+			column,
+		),
+		value,
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"execute query to extract data from reminders table: %w",
+			err,
+		)
+	}
+	defer rows.Close()
+
+	var reminders []models.Reminder
+
+	for rows.Next() {
+		reminder, err := extractReminderFromRow(rows)
+		if err != nil {
+			return nil, fmt.Errorf("extract reminder from row: %w", err)
+		}
+
+		reminders = append(reminders, *reminder)
+	}
+
+	return reminders, nil
+}
+
+func GetRemindersByChannel(
+	db *sql.DB,
+	channel string,
+) ([]models.Reminder, error) {
+	return GetRemindersBy(db, "channel", channel)
+}
+
+func GetRemindersByUser(
+	db *sql.DB,
+	user string,
+) ([]models.Reminder, error) {
+	return GetRemindersBy(db, "owner", user)
+}
+
+func UpdateReminderOwner(db *sql.DB, reminderID int64, userName string) error {
 	res, err := db.Exec(
-		`UPDATE reminders SET name = ?, rule = ?, channel = ?, message = ? WHERE id = ?`,
-		req.Name,
-		req.Rule,
-		req.Channel,
-		req.Message,
+		`UPDATE reminders SET owner = ? WHERE id = ?`,
+		userName,
 		reminderID,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("update reminder owner: execute query: %w", err)
 	}
 
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
-		return err
+		return fmt.Errorf("update reminder owner: get affected rows: %w", err)
 	}
 
 	if rowsAffected == 0 {
-		return err
+		return fmt.Errorf("update reminder owner: no rows was affected")
 	}
 
 	return nil
@@ -135,8 +167,9 @@ func UpdateReminder(db *sql.DB, reminderID int64, req dtos.ReminderDTO) error {
 
 func CreateReminder(db *sql.DB, req dtos.ReminderDTO) (int64, error) {
 	res, err := db.Exec(
-		`INSERT INTO reminders (name, rule, channel, message) VALUES (?, ?, ?, ?)`,
+		`INSERT INTO reminders (name, owner, rule, channel, message) VALUES (?, ?, ?, ?, ?)`,
 		req.Name,
+		req.Owner,
 		req.Rule,
 		req.Channel,
 		req.Message,

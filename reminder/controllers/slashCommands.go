@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 	_ "time/tzdata"
 
@@ -12,30 +11,8 @@ import (
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/dtos"
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/services"
 	"github.com/gin-gonic/gin"
+	"github.com/google/shlex"
 )
-
-const usage = `Usage: /reminder COMMAND OPTIONS
-Commands:
-- add, create NAME CRON-RULE MESSAGE - creates new reminder
-- list, ls - lists all reminders
-- delete, del, remove, rm ID... - deletes a reminders with ID... identifiers
-- timezone, tz LOCATION - updates channel timezone
-- timezone, tz - shows current location
-
-CRON-RULE:
-- "Seconds Minutes Hours DayOfMonth Month DayOfWeek Year"
-- "Minutes Hours DayOfMonth Month DayOfWeek Year" (Seconds default to 0)
-- "Minutes Hours DayOfMonth Month DayOfWeek" (Year defaults to *)
-- Month: 1-12 or JAN-DEC
-- DayOfWeek 0-6 or SUN-SAT
-- ` + "`*`" + ` - any value ("0 12 * * *" - 12:00 every day every month every year)
-- ` + "`/`" + ` - time period ("*/5 * * * *" - every 5 minute of every day every month every year)
-- ` + "`,`" + ` - list separator ("0 12 10,25 * *" - 12:00 every 10th and 25th day of every month)
-- ` + "`-`" + ` - range ("0 12 * MON-FRI *" - 12:00 every workday)
-- ` + "`L`" + ` - last ("0 12 * 5L *" - 12:00 last friday every month)
-- ` + "`#`" + ` - numbered ("0 12 * TUE#2 *" - 12:00 second tuesday of every month)
-LOCATION: TZ identifier (for example "Asia/Novosibirsk")
-`
 
 func mmReminderCreate(
 	app *app.Application,
@@ -45,7 +22,7 @@ func mmReminderCreate(
 	if err := services.MMReminderCreate(app, req, tokens); err != nil {
 		return "", err
 	}
-	return "Reminder created successfully", nil
+	return "Reminder successfully created", nil
 }
 
 func mmReminderTimeZone(
@@ -96,10 +73,20 @@ func processCommands(
 			str, err = services.MMReminderDelete(app, req, tokens)
 		case "timezone", "tz":
 			str, err = mmReminderTimeZone(app, req, tokens)
+		case "wh", "webhook":
+			str, err = services.MMReminderSetWebhook(app, req, tokens)
+		case "own", "chown", "steal", "snatch":
+			str, err = services.MMReminderChangeOwner(app, req, tokens)
+		case "help", "h":
+			str = help(tokens)
 		}
 		if err != nil {
 			return fmt.Sprintf("Error: %s", err), true
 		} else if str != "" {
+			user, err := services.GetUser(app, req.UserName)
+			if err != nil || !user.Webhook.Valid {
+				str = "WARNING: You have not your webhook set! This might cause problems sending your reminds. Follow `/reminder help webhook` tutorial to create your webhook.\n\n" + str
+			}
 			return str, true
 		}
 	}
@@ -130,26 +117,17 @@ func MattermostReminder(c *gin.Context) {
 		return
 	}
 
-	tokens := tokenize(req.Text)
+	tokens, err := shlex.Split(req.Text)
+	if err != nil {
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": fmt.Sprintf("Error tokenizing request: %s", err)},
+		)
+	}
 
 	if str, ok := processCommands(app, req, tokens); ok {
 		c.JSON(http.StatusOK, gin.H{"text": str})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"text": usage})
 	}
-}
-
-func tokenize(str string) []string {
-	re := regexp.MustCompile(`'[^']*'|"[^"]*"|\S+`)
-	tokens := re.FindAllString(str, -1)
-
-	for i, token := range tokens {
-		tokLen := len(token)
-		if tokLen > 1 &&
-			((token[0] == '"' && token[tokLen-1] == '"') ||
-				(token[0] == '\'' && token[tokLen-1] == '\'')) {
-			tokens[i] = token[1 : tokLen-1]
-		}
-	}
-	return tokens
 }

@@ -9,35 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func UpdateReminder(c *gin.Context) {
-	app, err := extractApp(c)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	reminderIDString := c.Param("id")
-	reminderID, err := strconv.ParseInt(reminderIDString, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	var reminderDTO dtos.ReminderDTO
-
-	if err := c.BindJSON(&reminderDTO); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := services.UpdateReminder(app, reminderID, reminderDTO); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
-}
-
 func CreateReminder(c *gin.Context) {
 	app, err := extractApp(c)
 	if err != nil {
