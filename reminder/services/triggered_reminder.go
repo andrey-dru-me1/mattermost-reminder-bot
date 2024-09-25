@@ -5,7 +5,7 @@ import (
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/models"
 )
 
-func GetTriggeredReminders(app *app.Application) []models.Reminder {
+func GetReminds(app *app.Application) []models.Remind {
 	return app.RemindManager.GetReminds()
 }
 

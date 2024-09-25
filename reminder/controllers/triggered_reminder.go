@@ -11,7 +11,7 @@ import (
 
 func GetTriggeredReminders(c *gin.Context) {
 	app := c.MustGet("app").(*app.Application)
-	reminds := services.GetTriggeredReminders(app)
+	reminds := services.GetReminds(app)
 	if len(reminds) > 0 {
 		c.JSON(http.StatusOK, reminds)
 	} else {

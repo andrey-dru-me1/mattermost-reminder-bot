@@ -10,7 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func handleRemind(c context.Context, wg *sync.WaitGroup, reminder reminder) {
+func handleRemind(c context.Context, wg *sync.WaitGroup, reminder remind) {
 	defer wg.Done()
 	logger := log.With().Interface("reminder", reminder).Logger()
 
@@ -45,7 +45,7 @@ func processReminds(c context.Context, wg *sync.WaitGroup) error {
 		return err
 	}
 
-	var reminders []reminder
+	var reminders []remind
 
 	if err := json.Unmarshal(body, &reminders); err != nil {
 		return err

@@ -1,0 +1,2 @@
+ALTER TABLE reminders DROP COLUMN owner;
+DROP TABLE IF EXISTS users;

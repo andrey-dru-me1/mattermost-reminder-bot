@@ -10,7 +10,10 @@ import (
 	"github.com/gorhill/cronexpr"
 )
 
-func CreateReminder(app *app.Application, reminderDTO dtos.ReminderDTO) (int64, error) {
+func CreateReminder(
+	app *app.Application,
+	reminderDTO dtos.ReminderDTO,
+) (int64, error) {
 	if _, err := cronexpr.Parse(reminderDTO.Rule); err != nil {
 		return 0, fmt.Errorf("parse cron expr: %w", err)
 	}
@@ -30,8 +33,13 @@ func CreateReminder(app *app.Application, reminderDTO dtos.ReminderDTO) (int64, 
 	return id, nil
 }
 
-func UpdateReminder(app *app.Application, reminderID int64, reminderDTO dtos.ReminderDTO) error {
-	return repositories.UpdateReminder(app.Db, reminderID, reminderDTO)
+func UpdateReminderOwner(
+	app *app.Application,
+	reminderID int64,
+	userName string,
+) error {
+	app.RemindManager.UpdateReminderOwner(reminderID, userName)
+	return repositories.UpdateReminderOwner(app.Db, reminderID, userName)
 }
 
 func DeleteReminder(app *app.Application, reminderID int64) error {
@@ -39,11 +47,17 @@ func DeleteReminder(app *app.Application, reminderID int64) error {
 	return repositories.DeleteReminder(app.Db, reminderID)
 }
 
-func GetReminder(app *app.Application, reminderID int64) (*models.Reminder, error) {
+func GetReminder(
+	app *app.Application,
+	reminderID int64,
+) (*models.Reminder, error) {
 	return repositories.GetReminder(app.Db, reminderID)
 }
 
-func GetRemindersByChannel(app *app.Application, channel string) ([]models.Reminder, error) {
+func GetRemindersByChannel(
+	app *app.Application,
+	channel string,
+) ([]models.Reminder, error) {
 	return repositories.GetRemindersByChannel(app.Db, channel)
 }
 

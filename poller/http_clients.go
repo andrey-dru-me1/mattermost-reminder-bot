@@ -6,25 +6,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/rs/zerolog/log"
 )
 
 func sendRemindToMM(
 	c context.Context,
-	reminder reminder,
+	remind remind,
 ) (*http.Response, error) {
-	logger := log.With().Interface("reminder", reminder).Logger()
+	logger := log.With().Interface("reminder", remind).Logger()
 
-	type remind struct {
+	type message struct {
 		Channel string `json:"channel"`
 		Message string `json:"text"`
 	}
 
-	rem := remind{
-		Channel: reminder.Channel,
-		Message: reminder.Message,
+	rem := message{
+		Channel: remind.Channel,
+		Message: remind.Message,
 	}
 
 	jsonStr, err := json.Marshal(rem)
@@ -35,7 +34,7 @@ func sendRemindToMM(
 	req, err := http.NewRequestWithContext(
 		c,
 		"POST",
-		os.Getenv("MM_IN_HOOK"),
+		"http://test_mm:8065/hooks/"+remind.Webhook,
 		bytes.NewBuffer(jsonStr),
 	)
 	if err != nil {
@@ -60,7 +59,7 @@ func sendRemindToMM(
 	return resp, nil
 }
 
-func markRemindCompleted(c context.Context, reminder reminder) error {
+func markRemindCompleted(c context.Context, reminder remind) error {
 	logger := log.With().Interface("reminder", reminder).Logger()
 
 	jsonStr := []byte(fmt.Sprintf(

@@ -1,18 +1,22 @@
 package main
 
 import (
-	"log"
 	"net/http"
+	"os"
 
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/app"
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/controllers"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
 	app, err := app.SetupApplication()
 	if err != nil {
-		log.Fatal(err)
+		log.Err(err).Msg("Error setting application up")
 	}
 	defer app.Db.Close()
 
@@ -23,9 +27,11 @@ func main() {
 		ctx.Next()
 	})
 
-	router.GET("/healthcheck", func(ctx *gin.Context) { ctx.Status(http.StatusOK) })
+	router.GET(
+		"/healthcheck",
+		func(ctx *gin.Context) { ctx.Status(http.StatusOK) },
+	)
 	router.GET("/reminders", controllers.GetReminders)
-	router.PUT("/reminder/:id", controllers.UpdateReminder)
 	router.POST("/reminders", controllers.CreateReminder)
 	router.DELETE("/reminder/:id", controllers.DeleteReminder)
 

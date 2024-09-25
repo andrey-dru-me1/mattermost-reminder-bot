@@ -39,3 +39,16 @@ func (m *Map[K, V]) Range(f func(key K, val V) bool) {
 		}
 	}
 }
+
+func (m *Map[K, V]) Lock() {
+	m.mu.Lock()
+}
+func (m *Map[K, V]) Unlock() {
+	m.mu.Unlock()
+}
+func (m *Map[K, V]) RLock() {
+	m.mu.RLock()
+}
+func (m *Map[K, V]) RUnock() {
+	m.mu.RUnlock()
+}
