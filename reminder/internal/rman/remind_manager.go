@@ -18,6 +18,7 @@ type RemindManager interface {
 	CompleteReminds(ids ...int64)
 	AddReminders(reminders ...models.Reminder)
 	UpdateReminderOwner(id int64, owner string)
+	UpdateRemindWebhook(id int64, webhook string)
 	RemoveReminders(ids ...int64)
 }
 
@@ -111,12 +112,17 @@ func (rm *defaultRemindManager) RemoveReminders(ids ...int64) {
 }
 
 func (rm *defaultRemindManager) UpdateReminderOwner(id int64, owner string) {
-	rm.reminds.Lock()
-	defer rm.reminds.Unlock()
-	if remind, ok := rm.reminds.Get(id); ok {
+	rm.reminds.Apply(id, func(remind models.Remind) models.Remind {
 		remind.Owner = sql.NullString{String: owner, Valid: true}
-		rm.reminds.Set(id, remind)
-	}
+		return remind
+	})
+}
+
+func (rm *defaultRemindManager) UpdateRemindWebhook(id int64, webhook string) {
+	rm.reminds.Apply(id, func(remind models.Remind) models.Remind {
+		remind.Webhook = webhook
+		return remind
+	})
 }
 
 func (rm *defaultRemindManager) generateReminds(

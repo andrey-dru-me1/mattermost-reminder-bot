@@ -15,6 +15,15 @@ func GetUser(app *app.Application, name string) (models.User, error) {
 }
 
 func InsertUser(app *app.Application, user models.User) error {
+	reminders, err := repositories.GetRemindersByUser(app.Db, user.Name)
+	if err == nil && user.Webhook.Valid {
+		for _, reminder := range reminders {
+			app.RemindManager.UpdateRemindWebhook(
+				reminder.ID,
+				user.Webhook.String,
+			)
+		}
+	}
 	return repositories.InsertUser(app.Db, user)
 }
 

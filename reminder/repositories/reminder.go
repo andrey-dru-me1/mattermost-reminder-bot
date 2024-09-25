@@ -94,13 +94,18 @@ func GetReminders(db *sql.DB) ([]models.Reminder, error) {
 	return reminders, nil
 }
 
-func GetRemindersByChannel(
+func GetRemindersBy(
 	db *sql.DB,
-	channel string,
+	column string,
+	value string,
 ) ([]models.Reminder, error) {
 	rows, err := db.Query(
-		`SELECT `+reminderCols+` FROM reminders WHERE channel = ?`,
-		channel,
+		fmt.Sprintf(
+			"SELECT %s FROM reminders WHERE %s = ?",
+			reminderCols,
+			column,
+		),
+		value,
 	)
 	if err != nil {
 		return nil, fmt.Errorf(
@@ -122,6 +127,20 @@ func GetRemindersByChannel(
 	}
 
 	return reminders, nil
+}
+
+func GetRemindersByChannel(
+	db *sql.DB,
+	channel string,
+) ([]models.Reminder, error) {
+	return GetRemindersBy(db, "channel", channel)
+}
+
+func GetRemindersByUser(
+	db *sql.DB,
+	user string,
+) ([]models.Reminder, error) {
+	return GetRemindersBy(db, "owner", user)
 }
 
 func UpdateReminderOwner(db *sql.DB, reminderID int64, userName string) error {

@@ -29,7 +29,7 @@ func handleRemind(c context.Context, wg *sync.WaitGroup, reminder remind) {
 		logger.Error().
 			Interface(respStatus, resp.Status).
 			Interface(respHeader, resp.Header).
-			Msg("Error sending request to a reminder service to mark reminds completed")
+			Msg("Failed sending message to mattermost")
 	}
 }
 

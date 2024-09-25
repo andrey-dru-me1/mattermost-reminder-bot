@@ -40,15 +40,10 @@ func (m *Map[K, V]) Range(f func(key K, val V) bool) {
 	}
 }
 
-func (m *Map[K, V]) Lock() {
+func (m *Map[K, V]) Apply(key K, f func(val V) V) {
 	m.mu.Lock()
-}
-func (m *Map[K, V]) Unlock() {
-	m.mu.Unlock()
-}
-func (m *Map[K, V]) RLock() {
-	m.mu.RLock()
-}
-func (m *Map[K, V]) RUnock() {
-	m.mu.RUnlock()
+	defer m.mu.Unlock()
+	if val, ok := m.m[key]; ok {
+		m.m[key] = f(val)
+	}
 }
