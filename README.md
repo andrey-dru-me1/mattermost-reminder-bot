@@ -92,7 +92,9 @@ Cron rule is a special string which shows when a remind should be sent. It can b
 - `Second Minute Hour DayOfMonth Month DayOfWeek Year`
 - `Minute Hour DayOfMonth Month DayOfWeek Year` (Second defaults to 0)
 - `Minute Hour DayOfMonth Month DayOfWeek` (Year defaults to *)
+
 There are some notes you want to understand to write appropriate strings:
+
 - Month could be set in two ways: `1-12` or `JAN-DEC`
 - Similar for the DayOfWeek: `0-7` or `SUN-SAT` (both `0` and `7` stand for `SUN`)
 - `*` - any value (`0 12 * * *` - 12:00 every day every month every year)
