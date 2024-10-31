@@ -16,7 +16,7 @@
     - [Webhook](#webhook)
     - [Examples](#examples)
   - [Configuration](#configuration)
-    - [Env variables](#env-variables)
+    - [.env file](#env-file)
     - [Container description](#container-description)
   - [Migrations](#migrations)
 
@@ -35,7 +35,7 @@
    1. If you decide to test the bot like this, you could access mattermost either from browser on <http://localhost:8065> or from desktop client adding a server with the same url
 2. Follow [this](https://developers.mattermost.com/integrate/slash-commands/custom/) tutorial to add slash commands to a mattermost server. As a url use POST `http://<host>:8080/mattermost/reminders` (for local server `<host>` is `reminder`)
    1. Probably you will have to add `<host>` to an 'Untrusted internal connections' in mattermost server. To do so, go to `System Console/Environment/Developer` and add your `<host>` to the `Allow untrusted internal connections to:` field.
-3. Copy `.env.example` to `.env` and fill in all the required information (see [this section](#env-variables) if you got confused about some variables)
+3. Copy `.env.example` to `.env` and fill in all the required information (see [this section](#env-file) if you got confused about some variables)
 4. Run `docker-compose up db -d`
 5. Run `migrate -database DB_URL -source file://migrations up` (see [Migrations](#migrations) for more information)
 6. Run `docker-compose up -d`
@@ -50,13 +50,13 @@ You could use pre-built reminder image from [dockerhub](https://hub.docker.com/r
 # docker-compose.yaml
 services:
    reminder:
-      image: andreydrumel/mm-remind-bot:1.0.0
+      image: andreydrumel/mm-remind-bot:1.1.1
       ...
 ```
 
 ```Dockerfile
 # Dockerfile
-FROM andreydrumel/mm-remind-bot:1.0.0
+FROM andreydrumel/mm-remind-bot:1.1.1
 ...
 ```
 
@@ -92,7 +92,9 @@ Cron rule is a special string which shows when a remind should be sent. It can b
 - `Second Minute Hour DayOfMonth Month DayOfWeek Year`
 - `Minute Hour DayOfMonth Month DayOfWeek Year` (Second defaults to 0)
 - `Minute Hour DayOfMonth Month DayOfWeek` (Year defaults to *)
+
 There are some notes you want to understand to write appropriate strings:
+
 - Month could be set in two ways: `1-12` or `JAN-DEC`
 - Similar for the DayOfWeek: `0-7` or `SUN-SAT` (both `0` and `7` stand for `SUN`)
 - `*` - any value (`0 12 * * *` - 12:00 every day every month every year)
@@ -118,9 +120,10 @@ To use the reminder bot a user should create a webhook and provide it to the bot
 2. Select `Incoming Webhooks`
 3. Click the `Add incoming Webhook` button
 4. Choose a title and a channel (you must choose the default one; besides, if everything works fine, it will not be used). Do not check `Lock to this channel` box!
-5. Save the webhook and copy the URL you receive on the next screen. The webhook should look like this `http://localhost:8065/hooks/XXXXXX`
-6. Go to any chat you have access to and write down `/reminder webhook WEBHOOK` (paste your webhook instead of the caps-locked word). It should be something like `/reminder webhook http://localhost:8065/hooks/XXXXXX`
+5. Save the webhook and copy the URL you receive on the next screen. The webhook should look like this `http://<mm_host>/hooks/XXXXXX`
+6. Go to any chat you have access to and write down `/reminder webhook WEBHOOK` (paste your webhook instead of the caps-locked word). It should be something like `/reminder webhook http://<mm_host>/hooks/XXXXXX`
 7. Done! After completing these actions, the reminder bot will send messages wherever you want.
+
 If someone who created a reminder loses access to a chat that the reminder is bound to, you could steal ownership of this reminder using command `/reminder steal ID`. After that, this reminder will send reminds using your webhook (you should specify it first using the tutorial above).
 
 ### Examples
@@ -143,7 +146,7 @@ Rule will create a reminder that triggers at 9:00, 12:00, 15:00 and 18:00 every 
 
 Database: MySQL
 
-### Env variables
+### .env file
 
 - `MYSQL_USER`
 - `MYSQL_PASSWORD`
@@ -151,14 +154,13 @@ Database: MySQL
 - `DB_PORT` - DataBase Port - mysql default is `3306`, but you can change it here
 - `DB_NAME` - DataBase Name - default is `reminders`, but if you want to use another name, you should rename it here
 - `MM_SC_TOKEN` - MatterMost Slash Command Token - token that you receive after [creating slash command](https://developers.mattermost.com/integrate/slash-commands/custom/)
-- `DEFAULT_TZ` - Default Time Zone - for the whole mattermost server
 
 ### Container description
 
 1. `db` - mysql database
    1. `MYSQL_USER`
    2. `MYSQL_PASSWORD`
-   3. `DB_NAME`
+   3. `MYSQL_DATABASE` == `DB_NAME`
 2. `reminder` - server with the main logic which handles a mattermost slash commands and provides useful API endpoints
    1. `MYSQL_USER`
    2. `MYSQL_PASSWORD`
@@ -166,7 +168,7 @@ Database: MySQL
    4. `DB_PORT`
    5. `DB_NAME`
    6. `MM_SC_TOKEN` - to verify the server attempting to use this command
-   7. `DEFAULT_TZ`
+   7. `DEFAULT_TZ` - Default Time Zone - for the whole mattermost server
 3. `poller` simple service that periodically polls the `reminder` container for reminds and sends them to a corresponding mattermost channel using webhook
    1. `POLL_PERIOD` - a time period for `poller` service to poll `reminder` service
 4. `test_mm` test profile - container that holds a test local mattermost server
