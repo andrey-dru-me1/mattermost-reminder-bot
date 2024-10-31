@@ -187,11 +187,15 @@ go install -tags 'mysql' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
 (This command will install `migrate` cli program into `$HOME/go/bin` directory, maybe you will have to add this directory to the `$PATH`)
 
+---
+
 To create migration:
 
 ```bash
 migrate create -ext sql -dir migrations -seq MIGRATION_NAME
 ```
+
+---
 
 To run migrations:
 

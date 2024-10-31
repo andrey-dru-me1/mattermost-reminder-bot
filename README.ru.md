@@ -190,13 +190,17 @@ Cron-правило - это строка, с помощью которой мо
 go install -tags 'mysql' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 ```
 
-(Эта команды установит консольную программу `migrate` по пути `$HOME/go/bin`. Возможно вам придётся добавить эту переменную в `$PATH`)
+(Эта команда установит консольную программу `migrate` по пути `$HOME/go/bin`. Возможно вам придётся добавить эту переменную в `$PATH`)
+
+---
 
 Создание миграции:
 
 ```bash
 migrate create -ext sql -dir migrations -seq MIGRATION_NAME
 ```
+
+---
 
 Выполнение миграции:
 
