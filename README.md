@@ -78,7 +78,7 @@ Commands:
 
 - `help,h [cron,location,webhook]` - show more descriptive help message about specified command
 - `add,create NAME CRON_RULE MESSAGE` - creates new reminder
-- `list,ls` - lists all reminders
+- `list,ls` - lists all reminders relevant to a current channel
 - `delete,del,remove,rm ID...` - deletes a reminders with ID... identifiers
 - `timezone,tz LOCATION` - updates channel timezone
 - `timezone,tz` - shows current location
@@ -128,7 +128,7 @@ If someone who created a reminder loses access to a chat that the reminder is bo
 
 ### Examples
 
-Rule will create weekly reminder that will be triggered at 12:00 on fridays repeatedly
+Command will create weekly reminder that will be triggered at 12:00 on fridays repeatedly
 
 ```text
 /reminder add "Weekly Reminder" "0 0 12 * * FRI *" "Another week is coming to an end!"
@@ -136,7 +136,7 @@ Rule will create weekly reminder that will be triggered at 12:00 on fridays repe
 
 ---
 
-Rule will create a reminder that triggers at 9:00, 12:00, 15:00 and 18:00 every monday and thursday
+Command will create a reminder that triggers at 9:00, 12:00, 15:00 and 18:00 every monday and thursday
 
 ```text
 /reminder add "Repeatedly reminder" "0 9-18/3 * * MON,THU"
@@ -168,9 +168,9 @@ Database: MySQL
    4. `DB_PORT`
    5. `DB_NAME`
    6. `MM_SC_TOKEN` - to verify the server attempting to use this command
-   7. `DEFAULT_TZ` - Default Time Zone - for the whole mattermost server
-3. `poller` simple service that periodically polls the `reminder` container for reminds and sends them to a corresponding mattermost channel using webhook
-   1. `POLL_PERIOD` - a time period for `poller` service to poll `reminder` service
+   7. `DEFAULT_TZ` - Default Time Zone
+3. `poller` - simple service that periodically polls the `reminder` container for reminds and sends them to a corresponding mattermost channel using webhook
+   1. `POLL_PERIOD` - a time period for `poller` service to poll `reminder` service. Unit suffix are used: `2h45m` stands for 2 hours 45 minutes
 4. `test_mm` test profile - container that holds a test local mattermost server
 
 ## Migrations
@@ -183,7 +183,7 @@ To install it, run:
 go install -tags 'mysql' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 ```
 
-(This command will install `migrate` cli program into `$HOME/go/bin` directory, maybe you will have to add this directory to the $PATH)
+(This command will install `migrate` cli program into `$HOME/go/bin` directory, maybe you will have to add this directory to the `$PATH`)
 
 To create migration:
 
