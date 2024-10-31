@@ -1,6 +1,6 @@
 # Mattermost Bot Reminder
 
-Этот файл также доступен и на других языках: [English](./README.md)
+Этот файл также доступен на других языках: [English](./README.md)
 
 ## Содержание
 
@@ -25,7 +25,7 @@
 ## Требования
 
 - go
-- golang-migrate (See [Migrations](#миграции))
+- golang-migrate (см. [Миграции](#миграции))
 - docker
 - docker-compose
 

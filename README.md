@@ -25,7 +25,7 @@ This `README` is also available on other languages: [Русский](./README.ru
 ## Prerequisites
 
 - go
-- golang-migrate (See [Migrations](#migrations))
+- golang-migrate (see [Migrations](#migrations))
 - docker
 - docker-compose
 
