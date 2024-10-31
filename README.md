@@ -1,5 +1,7 @@
 # Mattermost Bot Reminder
 
+This `README` is also available on other languages: [Русский](./README.ru.md)
+
 ## Table of contents
 
 - [Mattermost Bot Reminder](#mattermost-bot-reminder)

@@ -1,5 +1,7 @@
 # Mattermost Bot Reminder
 
+Этот файл также доступен и на других языках: [English](./README.md)
+
 ## Содержание
 
 - [Mattermost Bot Reminder](#mattermost-bot-reminder)
