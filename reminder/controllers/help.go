@@ -39,11 +39,11 @@ func helpLocation() string {
 }
 
 func helpWebhook() string {
-	return "To use the reminder bot, you need to create a webhook and give it to the bot. Here's how:\n\n" +
+	return "To use the reminder bot, you need to create a webhook and provide it to the bot. Here is the tutorial:\n\n" +
 
 		"1. Click the nine squares in the top left of Mattermost.\n" +
-		"2. Go to `Integrations > Incoming Webhooks > Add Incoming Webhook`, fill in the details, and save.\n" +
-		"3. Copy the URL you receive, then go to any channel and enter: `/reminder webhook http://<host>/hooks/XXXXXX`.\n\n" +
+		"2. Go to `Integrations > Incoming Webhooks > Add Incoming Webhook`, fill in title and channel and save the webhook.\n" +
+		"3. Copy the URL you receive, then go to any channel and enter: `/reminder webhook http://<host>/hooks/XXXXXX` (paste the copied URL as is).\n\n" +
 
 		"For more details, visit [this link](https://github.com/andrey-dru-me1/mattermost-reminder-bot/tree/v1.1.1?tab=readme-ov-file#webhook)."
 }
