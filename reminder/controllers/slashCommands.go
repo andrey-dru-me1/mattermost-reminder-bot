@@ -60,10 +60,10 @@ func processCommands(
 	app *app.Application,
 	req dtos.MMRequest,
 	tokens []string,
-) (string, bool) {
+) string {
+	var str string
+	var err error
 	if len(tokens) > 0 && strings.EqualFold(req.Command, "/reminder") {
-		var str string
-		var err error
 		switch tokens[0] {
 		case "add", "create":
 			str, err = mmReminderCreate(app, req, tokens)
@@ -80,17 +80,21 @@ func processCommands(
 		case "help", "h":
 			str = help(tokens)
 		}
-		if err != nil {
-			return fmt.Sprintf("Error: %s", err), true
-		} else if str != "" {
-			user, err := services.GetUser(app, req.UserName)
-			if err != nil || !user.Webhook.Valid {
-				str = "WARNING: You have not your webhook set! This might cause problems sending your reminds. Follow `/reminder help webhook` tutorial to create your webhook.\n\n" + str
-			}
-			return str, true
-		}
 	}
-	return "", false
+	if err != nil {
+		return fmt.Sprintf("Error: %s", err)
+	}
+	if str == "" {
+		str = usage()
+	}
+
+	user, err := services.GetUser(app, req.UserName)
+	if err != nil || !user.Webhook.Valid {
+		str = "WARNING: Your webhook is not set! This might prevent your" +
+			" reminders from being sent. Follow the `/reminder help webhook`" +
+			" guide to create your webhook.\n\n" + str
+	}
+	return str
 }
 
 func MattermostReminder(c *gin.Context) {
@@ -125,9 +129,5 @@ func MattermostReminder(c *gin.Context) {
 		)
 	}
 
-	if str, ok := processCommands(app, req, tokens); ok {
-		c.JSON(http.StatusOK, gin.H{"text": str})
-	} else {
-		c.JSON(http.StatusOK, gin.H{"text": usage})
-	}
+	c.JSON(http.StatusOK, gin.H{"text": processCommands(app, req, tokens)})
 }

@@ -1,14 +1,15 @@
 services:
   db:
-    image: mysql:9.0.1
+    image: mysql:9.1.0
+    container_name: reminder_db
     restart: always
     ports:
       - 3306:3306
-    env_file:
-      - ./.env
     environment:
-      - MYSQL_DATABASE=${DB_NAME}
-      - MYSQL_RANDOM_ROOT_PASSWORD=yes
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_RANDOM_ROOT_PASSWORD: yes
     volumes:
       - ./data:/var/lib/mysql
     healthcheck:
@@ -18,9 +19,16 @@ services:
       retries: 5
       start_period: 30s
   reminder:
-    image: golang:1.23.1
-    env_file:
-      - ./.env
+    image: golang:1.23.2
+    container_name: reminder
+    environment:
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      MM_SC_TOKEN: ${MM_SC_TOKEN}
+      DEFAULT_TZ: Asia/Novosibirsk
     volumes:
       - ./reminder:/root
     working_dir: /root
@@ -35,9 +43,8 @@ services:
       db:
         condition: service_healthy
   poller:
-    image: golang:1.23.1
-    env_file:
-      - .env
+    image: golang:1.23.2
+    container_name: poller
     environment:
       POLL_PERIOD: 1m
     volumes:
@@ -50,7 +57,7 @@ services:
   test_mm:
     profiles:
       - test
-    image: mattermost/mattermost-preview:10.0.0
+    image: mattermost/mattermost-preview:10.1.2
     container_name: test_mm
     ports:
       - "8065:8065"
