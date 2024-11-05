@@ -18,8 +18,8 @@ func helpCronRule() string {
 	return "Cron rule is a special string which shows when a remind should be sent. It can be written in three ways:\n\n" +
 
 		"- `Second Minute Hour DayOfMonth Month DayOfWeek Year`\n" +
-		"- `Minute Hour DayOfMonth Month DayOfWeek Year` (Second defaults to 0)\n" +
-		"- `Minute Hour DayOfMonth Month DayOfWeek` (Year defaults to *)\n\n" +
+		"- `Minute Hour DayOfMonth Month DayOfWeek Year` (Second defaults to `0`)\n" +
+		"- `Minute Hour DayOfMonth Month DayOfWeek` (Year defaults to `*`)\n\n" +
 
 		"There are some notes you want to understand to write appropriate strings:\n\n" +
 

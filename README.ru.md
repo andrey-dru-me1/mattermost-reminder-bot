@@ -38,10 +38,10 @@
    2. Если вы решите запустить Mattermost таким образом, то вы сможете зайти в него либо через браузер по адресу <http://localhost:8065>, либо из установленного приложения, добавив новый сервер с тем же URL
 2. Добавьте слеш-команду, следуя [официальной инструкции](https://developers.mattermost.com/integrate/slash-commands/custom/). В качестве URL используйте `http://<host>:8080/mattermost/reminders` с методом POST (для локального сервера Mattermost из пункта 1 вместо `<host>` подставьте `reminder`)
    1. Краткая инструкция по добавлению слеш-команды:
-      1. Кликните по квадратикам в левом верхнем углу приложения Mattermost, затем `Integrations/Slash Commands/Add Slash Command`
+      1. Кликните по квадратикам в левом верхнем углу приложения Mattermost, затем `Integrations > Slash Commands > Add Slash Command`
       2. Заполните поля `Command Trigger Word` (`reminder`) и `Request URL` (значение см. выше), опционально заполните остальное и кликните `Save`
       3. Скопируйте токен и нажмите `Done`
-   2. Возможно вам придётся разрешить мессенджеру использовать `<host>` для своих запров. Чтобы это сделать, перейдите в `System Console/Environment/Developer` и добавьте ваш `<host>` в поле `Allow untrusted internal connections to`
+   2. Возможно вам придётся разрешить мессенджеру использовать `<host>` для своих запросов. Чтобы это сделать, перейдите в `System Console/Environment/Developer` и добавьте ваш `<host>` в поле `Allow untrusted internal connections to`
 3. Создайте `.env` файл в корне репозитория и скопируйте в него содержимое `.env.example` файла. Заполните необходимую информацию (если название переменной окружения вызывает вопросы, посетите раздел [.env файл](#env-файл))
 4. Запустите `docker-compose up db -d`
 5. Пропишите `migrate -database DB_URL -source file://migrations up` (см. [Миграции](#миграции) для более подробной информации)
