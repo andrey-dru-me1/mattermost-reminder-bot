@@ -1,4 +1,4 @@
-CREATE TABLE channels (
+CREATE TABLE IF NOT EXISTS channels (
   name VARCHAR(255) PRIMARY KEY,
   time_zone VARCHAR(50) NOT NULL
 );
