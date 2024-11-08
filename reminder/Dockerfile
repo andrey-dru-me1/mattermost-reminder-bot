@@ -18,8 +18,11 @@ HEALTHCHECK --interval=10m --timeout=10s --start-period=5s --retries=5 CMD [ "cu
 
 RUN addgroup -S app && adduser -S app -G app
 COPY --from=builder --chown=app /go/bin/app /app
+COPY ./migrations /migrations
 USER app
 
-EXPOSE 80
+ENV MIGRATIONS_PATH=/migrations
+
+EXPOSE 8080
 
 ENTRYPOINT ["/app"]
