@@ -11,7 +11,7 @@ services:
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_RANDOM_ROOT_PASSWORD: yes
     volumes:
-      - ./data:/var/lib/mysql
+      - data:/var/lib/mysql
     healthcheck:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       interval: 30s
@@ -49,3 +49,7 @@ services:
       - "8065:8065"
     environment:
       MM_SERVICESETTINGS_ENABLELOCALMODE: "true"
+
+volumes:
+  data:
+    name: reminder_data

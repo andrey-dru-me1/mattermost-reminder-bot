@@ -10,6 +10,9 @@ import (
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/models"
 	"github.com/andrey-dru-me1/mattermost-reminder-bot/reminder/repositories"
 	"github.com/go-sql-driver/mysql"
+	"github.com/golang-migrate/migrate/v4"
+	mmysql "github.com/golang-migrate/migrate/v4/database/mysql"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 type TriggeredReminder struct {
@@ -26,7 +29,11 @@ type Application struct {
 func SetupApplication() (*Application, error) {
 	db, err := setupDatabase()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("setup database: %w", err)
+	}
+
+	if err := runMigrations(db); err != nil {
+		return nil, fmt.Errorf("run migrations: %w", err)
 	}
 
 	loc, err := time.LoadLocation(os.Getenv("DEFAULT_TZ"))
@@ -47,6 +54,26 @@ func SetupApplication() (*Application, error) {
 	}, nil
 }
 
+func runMigrations(db *sql.DB) error {
+	driver, err := mmysql.WithInstance(db, &mmysql.Config{})
+	if err != nil {
+		return err
+	}
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://migrations",
+		"mysql",
+		driver,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := m.Up(); err != nil && err.Error() != "no change" {
+		return err
+	}
+	return nil
+}
+
 func setupDatabase() (*sql.DB, error) {
 	cfg := mysql.Config{
 		User:   os.Getenv("MYSQL_USER"),
@@ -57,7 +84,8 @@ func setupDatabase() (*sql.DB, error) {
 			os.Getenv("DB_HOST"),
 			os.Getenv("DB_PORT"),
 		),
-		DBName: os.Getenv("DB_NAME"),
+		DBName:          os.Getenv("DB_NAME"),
+		MultiStatements: true,
 	}
 
 	db, err := sql.Open("mysql", cfg.FormatDSN())
