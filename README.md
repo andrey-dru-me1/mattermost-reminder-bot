@@ -6,6 +6,7 @@ This `README` is also available on other languages: [Русский](./README.ru
 
 - [Mattermost Bot Reminder](#mattermost-bot-reminder)
   - [Table of contents](#table-of-contents)
+  - [Description](#description)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
     - [Test](#test)
@@ -21,6 +22,10 @@ This `README` is also available on other languages: [Русский](./README.ru
     - [.env file](#env-file)
     - [Container description](#container-description)
   - [Migrations](#migrations)
+
+## Description
+
+The Reminder Bot is a Mattermost bot that allows you to create and manage both periodic and one-time reminders sent to Mattermost channels. It offers flexible reminder scheduling, the ability to send reminders to private channels, and tools for managing channel time zones. The messages can be used to remind channel members about calls and events and provide all the necessary links for participation.
 
 ## Prerequisites
 
@@ -38,9 +43,7 @@ This `README` is also available on other languages: [Русский](./README.ru
 2. Follow [this](https://developers.mattermost.com/integrate/slash-commands/custom/) tutorial to add slash commands to a mattermost server. As a url use POST `http://<host>:8080/mattermost/reminders` (for local server `<host>` is `reminder`)
    1. Probably you will have to add `<host>` to an 'Untrusted internal connections' in mattermost server. To do so, go to `System Console/Environment/Developer` and add your `<host>` to the `Allow untrusted internal connections to:` field.
 3. Copy `.env.example` to `.env` and fill in all the required information (see [this section](#env-file) if you got confused about some variables)
-4. Run `docker-compose up db -d`
-5. Run `migrate -database DB_URL -source file://migrations up` (see [Migrations](#migrations) for more information)
-6. Run `docker-compose up -d`
+4. Run `docker-compose up -d`
 
 ### Production
 
@@ -52,13 +55,13 @@ You could use pre-built reminder image from [dockerhub](https://hub.docker.com/r
 # docker-compose.yaml
 services:
    reminder:
-      image: andreydrumel/mm-remind-bot:1.1.1
+      image: andreydrumel/mm-remind-bot:1.1.2
       ...
 ```
 
 ```Dockerfile
 # Dockerfile
-FROM andreydrumel/mm-remind-bot:1.1.1
+FROM andreydrumel/mm-remind-bot:1.1.2
 ...
 ```
 
@@ -163,7 +166,7 @@ Database: MySQL
    1. `MYSQL_USER`
    2. `MYSQL_PASSWORD`
    3. `MYSQL_DATABASE` == `DB_NAME`
-2. `reminder` - server with the main logic which handles a mattermost slash commands and provides useful API endpoints
+2. `reminder` - server with the main logic which handles a mattermost slash commands and provides useful API endpoints, also runs migrations
    1. `MYSQL_USER`
    2. `MYSQL_PASSWORD`
    3. `DB_HOST`
@@ -171,6 +174,7 @@ Database: MySQL
    5. `DB_NAME`
    6. `MM_SC_TOKEN` - to verify the server attempting to use this command
    7. `DEFAULT_TZ` - Default Time Zone
+   8. `MIGRATIONS_PATH` - path to a folder containing migrations
 3. `poller` - simple service that periodically polls the `reminder` container for reminds and sends them to a corresponding mattermost channel using webhook
    1. `POLL_PERIOD` - a time period for `poller` service to poll `reminder` service. Unit suffix are used: `2h45m` stands for 2 hours 45 minutes
 4. `test_mm` test profile - container that holds a test local mattermost server
@@ -197,7 +201,9 @@ migrate create -ext sql -dir migrations -seq MIGRATION_NAME
 
 ---
 
-To run migrations:
+Notice that migrations run automatically when the reminder container starts, so you don't need to do it manually.
+
+To run migrations manually:
 
 ```bash
 migrate -database 'mysql://MYSQL_USER:MYSQL_PASSWORD@tcp(HOST:PORT)/NAME' -source file://migrations up
