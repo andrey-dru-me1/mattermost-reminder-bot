@@ -29,7 +29,6 @@ services:
       DB_NAME: ${DB_NAME}
       MM_SC_TOKEN: ${MM_SC_TOKEN}
       DEFAULT_TZ: Asia/Novosibirsk
-      MIGRATIONS_PATH: ./migrations
     volumes:
       - ./reminder:/app
     working_dir: /app

@@ -174,7 +174,6 @@ Database: MySQL
    5. `DB_NAME`
    6. `MM_SC_TOKEN` - to verify the server attempting to use this command
    7. `DEFAULT_TZ` - Default Time Zone
-   8. `MIGRATIONS_PATH` - path to a folder containing migrations
 3. `poller` - simple service that periodically polls the `reminder` container for reminds and sends them to a corresponding mattermost channel using webhook
    1. `POLL_PERIOD` - a time period for `poller` service to poll `reminder` service. Unit suffix are used: `2h45m` stands for 2 hours 45 minutes
 4. `test_mm` test profile - container that holds a test local mattermost server

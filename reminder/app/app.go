@@ -60,7 +60,7 @@ func runMigrations(db *sql.DB) error {
 		return err
 	}
 	m, err := migrate.NewWithDatabaseInstance(
-		fmt.Sprintf("file://%s", os.Getenv("MIGRATIONS_PATH")),
+		"file://migrations",
 		"mysql",
 		driver,
 	)

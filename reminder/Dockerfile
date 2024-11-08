@@ -21,8 +21,6 @@ COPY --from=builder --chown=app /go/bin/app /app
 COPY ./migrations /migrations
 USER app
 
-ENV MIGRATIONS_PATH=/migrations
-
 EXPOSE 8080
 
 ENTRYPOINT ["/app"]
