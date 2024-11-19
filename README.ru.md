@@ -60,13 +60,13 @@ Reminder Bot - бот для мессенджера Mattermost, который �
 # docker-compose.yaml
 services:
    reminder:
-      image: andreydrumel/mm-remind-bot:1.1.2
+      image: andreydrumel/mm-remind-bot:1.1.3
       ...
 ```
 
 ```Dockerfile
 # Dockerfile
-FROM andreydrumel/mm-remind-bot:1.1.2
+FROM andreydrumel/mm-remind-bot:1.1.3
 ...
 ```
 

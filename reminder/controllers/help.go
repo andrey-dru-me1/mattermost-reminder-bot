@@ -45,7 +45,7 @@ func helpWebhook() string {
 		"2. Go to `Integrations > Incoming Webhooks > Add Incoming Webhook`, fill in title and channel and save the webhook.\n" +
 		"3. Copy the URL you receive, then go to any channel and enter: `/reminder webhook http://<host>/hooks/XXXXXX` (paste the copied URL as is).\n\n" +
 
-		"For more details, visit [this link](https://github.com/andrey-dru-me1/mattermost-reminder-bot/tree/v1.1.2?tab=readme-ov-file#webhook)."
+		"For more details, visit [this link](https://github.com/andrey-dru-me1/mattermost-reminder-bot/tree/v1.1.3?tab=readme-ov-file#webhook)."
 }
 
 func help(tokens []string) string {
