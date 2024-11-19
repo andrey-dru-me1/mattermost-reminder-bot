@@ -14,7 +14,7 @@ FROM alpine:3.20.3
 
 RUN apk add --no-cache curl
 
-HEALTHCHECK --interval=10m --timeout=10s --start-period=5s --retries=5 CMD [ "curl", "--fail", "localhost:8080/healthcheck" ]
+HEALTHCHECK --interval=1m --timeout=20s --start-period=1m --retries=5 CMD [ "curl", "--fail", "localhost:8080/healthcheck" ]
 
 RUN addgroup -S app && adduser -S app -G app
 COPY --from=builder --chown=app /go/bin/app /app
