@@ -91,7 +91,7 @@ func processCommands(
 	user, err := services.GetUser(app, req.UserName)
 	if err != nil || !user.Webhook.Valid {
 		str = "WARNING: Your webhook is not set! This might prevent your" +
-			" reminders from being sent. Follow the `/reminder help webhook`" +
+			" reminds from being sent. Follow the `/reminder help webhook`" +
 			" guide to create your webhook.\n\n" + str
 	}
 	return str

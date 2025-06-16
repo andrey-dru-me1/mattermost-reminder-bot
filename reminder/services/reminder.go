@@ -38,7 +38,7 @@ func UpdateReminderOwner(
 	reminderID int64,
 	userName string,
 ) error {
-	app.RemindManager.UpdateReminderOwner(reminderID, userName)
+	app.RemindManager.UpdateRemindOwner(reminderID, userName)
 	return repositories.UpdateReminderOwner(app.Db, reminderID, userName)
 }
 
