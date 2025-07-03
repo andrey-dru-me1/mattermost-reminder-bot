@@ -53,6 +53,14 @@ func TestRange(t *testing.T) {
 		})
 
 		assert.Equal(t, testData, visited)
+
+		m.Delete("key1")
+		m.Delete("key2")
+		m.Delete("key3")
+		m.Range(func(key string, val int) bool {
+			t.Fatal("keys should not exist")
+			return true
+		})
 	})
 
 	t.Run("early exit", func(t *testing.T) {
