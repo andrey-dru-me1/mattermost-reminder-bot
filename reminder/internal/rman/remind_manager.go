@@ -51,9 +51,9 @@ func (rm *defaultRemindManager) TriggerReminds(reminds ...models.Remind) {
 
 func (rm *defaultRemindManager) GetReminds() []models.Remind {
 	var reminders []models.Remind
-	rm.reminds.Range(func(key int64, value models.Remind) bool {
+	rm.reminds.Range(func(key int64, value models.Remind) error {
 		reminders = append(reminders, value)
-		return true
+		return nil
 	})
 	return reminders
 }

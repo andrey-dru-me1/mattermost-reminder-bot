@@ -1,6 +1,9 @@
 package syncmap
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
 type Map[K comparable, V any] struct {
 	mu sync.RWMutex
@@ -30,14 +33,19 @@ func (m *Map[K, V]) Delete(key K) {
 	delete(m.m, key)
 }
 
-func (m *Map[K, V]) Range(f func(key K, val V) bool) {
+func (m *Map[K, V]) Range(f func(key K, val V) error) error {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	for key, val := range m.m {
-		if !f(key, val) {
-			return
+		err := f(key, val)
+		if err != nil {
+			return fmt.Errorf(
+				"error executing func from arg. key: %v, val: %v %w",
+				key, val, err,
+			)
 		}
 	}
+	return nil
 }
 
 func (m *Map[K, V]) Apply(key K, f func(val V) V) {

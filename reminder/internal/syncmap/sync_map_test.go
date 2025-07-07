@@ -47,9 +47,9 @@ func TestRange(t *testing.T) {
 		}
 
 		visited := make(map[string]int)
-		m.Range(func(key string, val int) bool {
+		m.Range(func(key string, val int) error {
 			visited[key] = val
-			return true
+			return nil
 		})
 
 		assert.Equal(t, testData, visited)
@@ -57,9 +57,9 @@ func TestRange(t *testing.T) {
 		m.Delete("key1")
 		m.Delete("key2")
 		m.Delete("key3")
-		m.Range(func(key string, val int) bool {
+		m.Range(func(key string, val int) error {
 			t.Fatal("keys should not exist")
-			return true
+			return nil
 		})
 	})
 
@@ -70,9 +70,9 @@ func TestRange(t *testing.T) {
 		}
 
 		count := 0
-		m.Range(func(key string, val int) bool {
+		m.Range(func(key string, val int) error {
 			count++
-			return false
+			return fmt.Errorf("error count")
 		})
 		assert.Equal(t, 1, count)
 	})
@@ -121,10 +121,10 @@ func TestConcurrentAccess(t *testing.T) {
 		wg.Wait()
 
 		count := 0
-		m.Range(func(key, val int) bool {
+		m.Range(func(key, val int) error {
 			count++
 			assert.Equal(t, key, val)
-			return true
+			return nil
 		})
 		assert.Equal(t, n, count)
 	})
@@ -191,9 +191,9 @@ func TestConcurrentAccess(t *testing.T) {
 
 		// After all operations complete, verify that all keys were deleted
 		deletedCount := 0
-		m.Range(func(key string, val int) bool {
+		m.Range(func(key string, val int) error {
 			deletedCount++
-			return true
+			return nil
 		})
 		assert.Zero(t, deletedCount, "All keys should have been deleted")
 	})
