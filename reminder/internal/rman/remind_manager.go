@@ -12,7 +12,12 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+type Closer interface {
+	Close()
+}
+
 type RemindManager interface {
+	Closer
 	TriggerReminds(reminders ...models.Remind)
 	GetReminds() []models.Remind
 	CompleteReminds(ids ...int64)
@@ -122,6 +127,18 @@ func (rm *defaultRemindManager) UpdateRemindWebhook(id int64, webhook string) {
 	rm.reminds.Apply(id, func(remind models.Remind) models.Remind {
 		remind.Webhook = webhook
 		return remind
+	})
+}
+
+func (rm *defaultRemindManager) Close() {
+	rm.cancels.Range(func(key int64, val chan<- bool) bool {
+		val <- true
+		close(val)
+		return true
+	})
+	rm.completes.Range(func(key int64, val chan<- bool) bool {
+		close(val)
+		return true
 	})
 }
 

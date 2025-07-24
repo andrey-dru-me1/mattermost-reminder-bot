@@ -8,9 +8,13 @@ import (
 )
 
 func extractApp(c *gin.Context) (*app.Application, error) {
-	app, exists := c.MustGet("app").(*app.Application)
+	val, exists := c.Get("app")
 	if !exists {
 		return nil, fmt.Errorf("application not provided")
+	}
+	app, ok := val.(*app.Application)
+	if !ok {
+		return nil, fmt.Errorf("application has wrong type")
 	}
 	return app, nil
 }
